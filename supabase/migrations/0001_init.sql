@@ -24,7 +24,7 @@ create table if not exists public.leads (
   message text,
   status lead_status not null default 'nuevo',
   source text not null default 'landing',
-  consent boolean not null default false,
+  consent_contact boolean not null default false,
   constraint leads_name_length check (char_length(name) between 2 and 100),
   constraint leads_email_format check (email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
   constraint leads_message_length check (message is null or char_length(message) <= 500)
@@ -42,7 +42,7 @@ create policy "Public can submit leads"
   on public.leads
   for insert
   to anon
-  with check (consent = true);
+  with check (consent_contact = true);
 
 -- Solo usuarios autenticados (el equipo admin) pueden gestionar los leads.
 drop policy if exists "Authenticated can read leads" on public.leads;

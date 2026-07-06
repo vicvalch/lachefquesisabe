@@ -20,7 +20,7 @@ export async function createLead(
     phone: input.phone || null,
     interest: input.interest,
     message: input.message || null,
-    consent: input.consent,
+    consent_contact: input.consent_contact,
     source: "landing",
   });
 

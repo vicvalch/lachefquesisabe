@@ -78,7 +78,7 @@ Esto crea la tabla `leads` (con enums `lead_interest` / `lead_status`),
 índices y políticas de Row Level Security:
 
 - El formulario público solo puede **insertar** leads (rol `anon`), y solo
-  si `consent = true`.
+  si `consent_contact = true`.
 - Solo usuarios **autenticados** (el equipo admin) pueden leer/actualizar/
   borrar leads.
 

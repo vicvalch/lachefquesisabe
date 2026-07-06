@@ -8,7 +8,7 @@ const validInput: CreateLeadInput = {
   phone: "",
   interest: "recetas",
   message: "",
-  consent: true,
+  consent_contact: true,
 };
 
 function buildSupabaseMock(insertResult: { error: { message: string } | null }) {
@@ -32,7 +32,7 @@ describe("createLead", () => {
         phone: null,
         interest: "recetas",
         message: null,
-        consent: true,
+        consent_contact: true,
         source: "landing",
       }),
     );
@@ -44,5 +44,20 @@ describe("createLead", () => {
     const result = await createLead(client, validInput);
 
     expect(result).toEqual({ ok: false, error: "db down" });
+  });
+
+  it("ignora campos internos aunque vengan en el input", async () => {
+    const { client, insert } = buildSupabaseMock({ error: null });
+    const tampered = {
+      ...validInput,
+      status: "convertido",
+      notes: "no debería llegar a la base",
+    } as CreateLeadInput;
+
+    await createLead(client, tampered);
+
+    const insertedPayload = insert.mock.calls[0][0];
+    expect(insertedPayload).not.toHaveProperty("status");
+    expect(insertedPayload).not.toHaveProperty("notes");
   });
 });

@@ -46,7 +46,7 @@ export const leadFormSchema = z.object({
     .max(500, "El mensaje no puede superar los 500 caracteres")
     .optional()
     .or(z.literal("")),
-  consent: z.boolean().refine((value) => value === true, {
+  consent_contact: z.boolean().refine((value) => value === true, {
     message: "Necesitamos tu autorización para poder contactarte",
   }),
   // Honeypot: debe llegar vacío. Los bots suelen completar todos los campos.

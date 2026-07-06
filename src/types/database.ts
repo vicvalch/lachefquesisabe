@@ -16,7 +16,7 @@ export type LeadRow = {
   message: string | null;
   status: LeadStatus;
   source: string;
-  consent: boolean;
+  consent_contact: boolean;
 };
 
 export type LeadInsert = {
@@ -29,7 +29,7 @@ export type LeadInsert = {
   message?: string | null;
   status?: LeadStatus;
   source?: string;
-  consent: boolean;
+  consent_contact: boolean;
 };
 
 export type LeadUpdate = {
@@ -40,7 +40,7 @@ export type LeadUpdate = {
   message?: string | null;
   status?: LeadStatus;
   source?: string;
-  consent?: boolean;
+  consent_contact?: boolean;
 };
 
 export type Database = {

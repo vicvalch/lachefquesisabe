@@ -21,7 +21,7 @@ const defaultValues: LeadFormValues = {
   phone: "",
   interest: "recetas",
   message: "",
-  consent: false,
+  consent_contact: false,
   website: "",
 };
 
@@ -130,7 +130,7 @@ export function LeadForm() {
           <input
             type="checkbox"
             className="mt-1 h-4 w-4 rounded border-ink/30 text-brand-500 focus:ring-brand-500"
-            {...register("consent")}
+            {...register("consent_contact")}
           />
           <span>
             Acepto que La Chef que Sí Sabe me contacte con información sobre
@@ -146,9 +146,9 @@ export function LeadForm() {
             .
           </span>
         </label>
-        {errors.consent && (
+        {errors.consent_contact && (
           <p className="mt-1 text-xs font-medium text-brand-700" role="alert">
-            {errors.consent.message}
+            {errors.consent_contact.message}
           </p>
         )}
       </div>
