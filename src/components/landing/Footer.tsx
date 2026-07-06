@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 
 export function Footer() {
@@ -8,6 +9,11 @@ export function Footer() {
         <div className="text-sm text-ink-soft">
           <p>@lachefquesisabe</p>
           <p>&copy; {new Date().getFullYear()} La Chef que Sí Sabe. Todos los derechos reservados.</p>
+          <p>
+            <Link href="/privacidad" className="underline hover:text-brand-600">
+              Política de privacidad
+            </Link>
+          </p>
         </div>
       </div>
     </footer>

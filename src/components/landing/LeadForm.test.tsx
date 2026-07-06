@@ -3,8 +3,15 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { LeadForm } from "./LeadForm";
 
+const push = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push }),
+}));
+
 describe("LeadForm", () => {
   beforeEach(() => {
+    push.mockClear();
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -28,9 +35,10 @@ describe("LeadForm", () => {
       await screen.findByText(/cuéntanos tu nombre completo/i),
     ).toBeInTheDocument();
     expect(fetch).not.toHaveBeenCalled();
+    expect(push).not.toHaveBeenCalled();
   });
 
-  it("envía el formulario y muestra el mensaje de éxito", async () => {
+  it("envía el formulario y redirige a la página de gracias", async () => {
     const user = userEvent.setup();
     render(<LeadForm />);
 
@@ -46,8 +54,6 @@ describe("LeadForm", () => {
       expect.objectContaining({ method: "POST" }),
     ));
 
-    expect(
-      await screen.findByText(/te contactaremos muy pronto/i),
-    ).toBeInTheDocument();
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/gracias"));
   });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -25,7 +26,7 @@ const defaultValues: LeadFormValues = {
 };
 
 export function LeadForm() {
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -52,29 +53,14 @@ export function LeadForm() {
         setServerError(
           result.error || "No pudimos guardar tu información. Intenta de nuevo.",
         );
-        setStatus("error");
         return;
       }
 
-      setStatus("success");
       reset(defaultValues);
+      router.push("/gracias");
     } catch {
       setServerError("Ocurrió un problema de conexión. Intenta de nuevo.");
-      setStatus("error");
     }
-  }
-
-  if (status === "success") {
-    return (
-      <div
-        role="status"
-        className="rounded-2xl border border-olive-500/30 bg-olive-500/10 p-8 text-center"
-      >
-        <p className="font-display text-xl font-semibold text-olive-600">
-          ¡Gracias! Te contactaremos muy pronto.
-        </p>
-      </div>
-    );
   }
 
   return (
@@ -146,8 +132,19 @@ export function LeadForm() {
             className="mt-1 h-4 w-4 rounded border-ink/30 text-brand-500 focus:ring-brand-500"
             {...register("consent")}
           />
-          Acepto que La Chef que Sí Sabe me contacte con información sobre
-          recetas y demostraciones.
+          <span>
+            Acepto que La Chef que Sí Sabe me contacte con información sobre
+            recetas y demostraciones. Consulta nuestra{" "}
+            <a
+              href="/privacidad"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-brand-700 underline"
+            >
+              política de privacidad
+            </a>
+            .
+          </span>
         </label>
         {errors.consent && (
           <p className="mt-1 text-xs font-medium text-brand-700" role="alert">
