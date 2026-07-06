@@ -1,0 +1,15 @@
+import { Logo } from "@/components/brand/Logo";
+
+export function Footer() {
+  return (
+    <footer className="border-t border-ink/10 bg-cream-dark/60 py-10">
+      <div className="mx-auto flex max-w-6xl flex-col items-start gap-4 px-6 sm:flex-row sm:items-center sm:justify-between">
+        <Logo />
+        <div className="text-sm text-ink-soft">
+          <p>@lachefquesisabe</p>
+          <p>&copy; {new Date().getFullYear()} La Chef que Sí Sabe. Todos los derechos reservados.</p>
+        </div>
+      </div>
+    </footer>
+  );
+}
