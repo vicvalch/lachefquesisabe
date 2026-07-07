@@ -82,7 +82,7 @@ export function LeadInfoCard({ lead }: { lead: LeadRow }) {
           <dd className="text-sm text-ink">
             {lead.next_follow_up_at
               ? formatDateTime(lead.next_follow_up_at)
-              : "Sin programar"}
+              : "Sin tareas abiertas"}
           </dd>
         </div>
       </dl>

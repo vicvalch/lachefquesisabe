@@ -4,6 +4,7 @@ import type {
   RegisterLeadForDemoInput,
   UpdateAttendanceInput,
 } from "@/lib/validations/demo-registration";
+import { ensureFollowUpTaskForStatus } from "@/lib/leads/follow-up-task-lifecycle";
 
 const ACTIVE_ATTENDANCE_STATUSES: AttendanceStatus[] = [
   "registered",
@@ -88,11 +89,15 @@ export type UpdateAttendanceResult = { ok: true } | { ok: false; error: string }
  * leads.status para reflejar el nuevo estado (invited_to_demo,
  * confirmed_demo, attended, no_show). "cancelled" no sincroniza el status
  * del lead: cancelar una inscripción no dice nada sobre su interés.
+ *
+ * Al sincronizar el status también asegura la tarea de seguimiento
+ * correspondiente (ver ensureFollowUpTaskForStatus), atada a esta demo.
  */
 export async function updateAttendanceStatus(
   supabase: SupabaseClient<Database>,
   registrationId: string,
   leadId: string,
+  demoEventId: string,
   input: UpdateAttendanceInput,
 ): Promise<UpdateAttendanceResult> {
   const { error: updateError } = await supabase
@@ -117,6 +122,8 @@ export async function updateAttendanceStatus(
     if (leadError) {
       return { ok: false, error: leadError.message };
     }
+
+    return ensureFollowUpTaskForStatus(supabase, leadId, leadStatus, demoEventId);
   }
 
   return { ok: true };

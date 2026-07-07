@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getLeadStats, listUpcomingFollowUps } from "@/lib/leads/queries";
+import { getLeadStats } from "@/lib/leads/queries";
+import { listDueFollowUpTasks } from "@/lib/leads/follow-up-tasks-queries";
 import {
   getRegistrationCountsByDemoIds,
   listUpcomingDemoEvents,
@@ -21,10 +22,10 @@ export const metadata = {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const [stats, upcomingFollowUps, upcomingDemos, contentStats, recentContent] =
+  const [stats, dueFollowUpTasks, upcomingDemos, contentStats, recentContent] =
     await Promise.all([
       getLeadStats(supabase),
-      listUpcomingFollowUps(supabase),
+      listDueFollowUpTasks(supabase),
       listUpcomingDemoEvents(supabase, 5),
       getContentStats(supabase),
       listRecentContentPosts(supabase, 5),
@@ -73,10 +74,10 @@ export default async function DashboardPage() {
           </Link>
         </div>
         <p className="mt-1 text-sm text-ink-soft">
-          Leads con un próximo seguimiento vencido o para hoy.
+          Tareas de seguimiento vencidas o para hoy.
         </p>
         <div className="mt-4">
-          <UpcomingFollowUps leads={upcomingFollowUps} />
+          <UpcomingFollowUps tasks={dueFollowUpTasks} />
         </div>
       </div>
 

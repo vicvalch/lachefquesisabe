@@ -1,13 +1,24 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, LeadUpdate } from "@/types/database";
+import type { Database } from "@/types/database";
 import type { AddContactLogInput } from "@/lib/validations/contact-log";
+import {
+  completeFollowUpTask,
+  createFollowUpTask,
+} from "@/lib/leads/follow-up-task-lifecycle";
 
 export type AddContactLogResult = { ok: true } | { ok: false; error: string };
 
 /**
- * Registra un contacto realizado con un lead y, en el mismo flujo,
- * actualiza leads.last_contacted_at y (si vino) leads.next_follow_up_at,
- * para que la lista de seguimientos pendientes quede al día.
+ * Registra un contacto realizado con un lead. En el mismo flujo:
+ * 1. Actualiza leads.last_contacted_at.
+ * 2. Si `task_id` viene (se registró el contacto desde una tarea puntual
+ *    del Centro de Seguimientos o del detalle del lead), completa esa
+ *    tarea y la enlaza con este contact_log.
+ * 3. Si se indicó `next_follow_up_at`, crea una nueva tarea de seguimiento
+ *    abierta para esa fecha (follow_up_tasks es la fuente real de cada
+ *    seguimiento programado; leads.next_follow_up_at solo se actualiza
+ *    como snapshot derivado, vía un trigger sobre follow_up_tasks, nunca
+ *    directamente desde acá).
  */
 export async function addContactLog(
   supabase: SupabaseClient<Database>,
@@ -15,32 +26,57 @@ export async function addContactLog(
   createdBy: string | null,
   input: AddContactLogInput,
 ): Promise<AddContactLogResult> {
-  const { error: insertError } = await supabase.from("contact_logs").insert({
-    lead_id: leadId,
-    created_by: createdBy,
-    channel: input.channel,
-    direction: input.direction,
-    summary: input.summary,
-    outcome: input.outcome || null,
-    next_follow_up_at: input.next_follow_up_at || null,
-  });
+  const { data: inserted, error: insertError } = await supabase
+    .from("contact_logs")
+    .insert({
+      lead_id: leadId,
+      created_by: createdBy,
+      channel: input.channel,
+      direction: input.direction,
+      summary: input.summary,
+      outcome: input.outcome || null,
+      next_follow_up_at: input.next_follow_up_at || null,
+    })
+    .select("id")
+    .single();
 
-  if (insertError) {
-    return { ok: false, error: insertError.message };
-  }
-
-  const leadUpdate: LeadUpdate = { last_contacted_at: new Date().toISOString() };
-  if (input.next_follow_up_at) {
-    leadUpdate.next_follow_up_at = input.next_follow_up_at;
+  if (insertError || !inserted) {
+    return {
+      ok: false,
+      error: insertError?.message ?? "No se pudo registrar el contacto.",
+    };
   }
 
   const { error: updateError } = await supabase
     .from("leads")
-    .update(leadUpdate)
+    .update({ last_contacted_at: new Date().toISOString() })
     .eq("id", leadId);
 
   if (updateError) {
     return { ok: false, error: updateError.message };
+  }
+
+  if (input.task_id) {
+    const completeResult = await completeFollowUpTask(supabase, input.task_id, {
+      contactLogId: inserted.id,
+    });
+    if (!completeResult.ok) {
+      return completeResult;
+    }
+  }
+
+  if (input.next_follow_up_at) {
+    const createResult = await createFollowUpTask(supabase, {
+      leadId,
+      title: "Dar seguimiento",
+      dueAt: input.next_follow_up_at,
+      messageTemplateKey: "recontacto-suave",
+      demoEventId: null,
+      createdBy,
+    });
+    if (!createResult.ok) {
+      return createResult;
+    }
   }
 
   return { ok: true };

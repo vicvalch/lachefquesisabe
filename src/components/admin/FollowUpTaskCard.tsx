@@ -5,15 +5,15 @@ import Link from "next/link";
 import { cn, formatDateTime } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { WhatsAppTemplates } from "@/components/admin/WhatsAppTemplates";
+import { MessageTemplatePicker } from "@/components/admin/MessageTemplatePicker";
 import { ContactLogForm } from "@/components/admin/ContactLogForm";
-import { CompleteFollowUpButton } from "@/components/admin/CompleteFollowUpButton";
+import { FollowUpTaskActions } from "@/components/admin/FollowUpTaskActions";
 import {
   LEAD_STATUS_LABELS,
   PRIMARY_INTEREST_LABELS,
 } from "@/lib/validations/lead";
-import { getFollowUpSuggestion } from "@/lib/leads/follow-up-suggestions";
-import type { LeadRow } from "@/types/database";
+import type { FollowUpTaskWithLead } from "@/lib/leads/follow-up-tasks-queries";
+import type { MessageTemplateRow } from "@/types/database";
 
 export type FollowUpUrgency = "overdue" | "today" | "upcoming";
 
@@ -24,14 +24,16 @@ const URGENCY_BORDER_CLASSES: Record<FollowUpUrgency, string> = {
 };
 
 export function FollowUpTaskCard({
-  lead,
+  task,
   urgency,
+  templates,
 }: {
-  lead: LeadRow;
+  task: FollowUpTaskWithLead;
   urgency: FollowUpUrgency;
+  templates: MessageTemplateRow[];
 }) {
   const [showLogForm, setShowLogForm] = useState(false);
-  const suggestion = getFollowUpSuggestion(lead.status);
+  const { lead, demo } = task;
 
   return (
     <div
@@ -55,33 +57,39 @@ export function FollowUpTaskCard({
           </div>
         </div>
         <div className="text-right text-xs text-ink-soft">
-          <p className="font-semibold text-ink">{suggestion.taskLabel}</p>
-          <p>
-            {lead.next_follow_up_at ? formatDateTime(lead.next_follow_up_at) : "-"}
-          </p>
+          <p className="font-semibold text-ink">{task.title}</p>
+          <p>{formatDateTime(task.due_at)}</p>
+          {demo && <p className="mt-0.5">{demo.title}</p>}
         </div>
       </div>
 
       <div className="mt-4">
-        <WhatsAppTemplates lead={lead} defaultTemplateId={suggestion.templateId} />
+        <MessageTemplatePicker
+          templates={templates}
+          lead={lead}
+          demo={demo}
+          defaultTemplateKey={task.message_template_key}
+        />
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-ink/10 pt-4">
-        <Button type="button" variant="ghost" onClick={() => setShowLogForm((v) => !v)}>
-          {showLogForm ? "Ocultar registro" : "Registrar contacto"}
-        </Button>
-        <CompleteFollowUpButton leadId={lead.id} />
-        <Link
-          href={`/admin/leads/${lead.id}`}
-          className="text-sm font-semibold text-brand-700 hover:underline"
-        >
-          Ver lead completo
-        </Link>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-ink/10 pt-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="button" variant="ghost" onClick={() => setShowLogForm((v) => !v)}>
+            {showLogForm ? "Ocultar registro" : "Registrar contacto"}
+          </Button>
+          <Link
+            href={`/admin/leads/${lead.id}`}
+            className="text-sm font-semibold text-brand-700 hover:underline"
+          >
+            Ver lead completo
+          </Link>
+        </div>
+        <FollowUpTaskActions taskId={task.id} leadId={lead.id} />
       </div>
 
       {showLogForm && (
         <div className="mt-4 border-t border-ink/10 pt-4">
-          <ContactLogForm leadId={lead.id} />
+          <ContactLogForm leadId={lead.id} taskId={task.id} />
         </div>
       )}
     </div>

@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { href: "/admin/leads", label: "Leads" },
   { href: "/admin/demos", label: "Demos" },
   { href: "/admin/content", label: "Contenido" },
+  { href: "/admin/plantillas", label: "Plantillas" },
 ];
 
 export function Sidebar() {

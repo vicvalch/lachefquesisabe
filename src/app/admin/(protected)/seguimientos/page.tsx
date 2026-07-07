@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { listFollowUpTasks } from "@/lib/leads/queries";
+import { listOpenFollowUpTasks } from "@/lib/leads/follow-up-tasks-queries";
+import { listMessageTemplates } from "@/lib/message-templates/queries";
 import { groupFollowUpTasks } from "@/lib/leads/follow-up-tasks";
 import { FollowUpTaskList } from "@/components/admin/FollowUpTaskList";
 
@@ -9,8 +10,11 @@ export const metadata = {
 
 export default async function FollowUpCommandCenterPage() {
   const supabase = await createClient();
-  const leads = await listFollowUpTasks(supabase);
-  const { overdue, today, upcoming } = groupFollowUpTasks(leads);
+  const [tasks, templates] = await Promise.all([
+    listOpenFollowUpTasks(supabase),
+    listMessageTemplates(supabase),
+  ]);
+  const { overdue, today, upcoming } = groupFollowUpTasks(tasks);
 
   return (
     <div className="flex flex-col gap-8">
@@ -19,7 +23,7 @@ export default async function FollowUpCommandCenterPage() {
           Centro de seguimientos
         </h1>
         <p className="mt-1 text-sm text-ink-soft">
-          Todo lo que hay que hacer hoy: vencidos, de hoy y próximos. Copia el
+          Todo lo que hay que hacer hoy: vencidas, de hoy y próximas. Copia el
           mensaje sugerido, ábrelo en WhatsApp y registra el contacto sin
           perder el hilo.
         </p>
@@ -30,12 +34,13 @@ export default async function FollowUpCommandCenterPage() {
           Vencidas ({overdue.length})
         </h2>
         <p className="mt-1 text-sm text-ink-soft">
-          Su fecha de próximo seguimiento ya pasó.
+          Su fecha de vencimiento ya pasó.
         </p>
         <div className="mt-4">
           <FollowUpTaskList
-            leads={overdue}
+            tasks={overdue}
             urgency="overdue"
+            templates={templates}
             emptyMessage="No hay tareas vencidas. ¡Vas al día!"
           />
         </div>
@@ -46,12 +51,13 @@ export default async function FollowUpCommandCenterPage() {
           Hoy ({today.length})
         </h2>
         <p className="mt-1 text-sm text-ink-soft">
-          Seguimientos programados para hoy.
+          Tareas programadas para hoy.
         </p>
         <div className="mt-4">
           <FollowUpTaskList
-            leads={today}
+            tasks={today}
             urgency="today"
+            templates={templates}
             emptyMessage="No hay tareas programadas para hoy."
           />
         </div>
@@ -62,13 +68,14 @@ export default async function FollowUpCommandCenterPage() {
           Próximas ({upcoming.length})
         </h2>
         <p className="mt-1 text-sm text-ink-soft">
-          Seguimientos programados para más adelante.
+          Tareas programadas para más adelante.
         </p>
         <div className="mt-4">
           <FollowUpTaskList
-            leads={upcoming}
+            tasks={upcoming}
             urgency="upcoming"
-            emptyMessage="No hay seguimientos programados más adelante."
+            templates={templates}
+            emptyMessage="No hay tareas programadas más adelante."
           />
         </div>
       </section>

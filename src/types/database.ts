@@ -51,6 +51,31 @@ export type ContentStatus = "draft" | "published" | "archived";
 
 export type ContentDifficulty = "easy" | "medium" | "hard";
 
+export type TaskStatus = "open" | "completed" | "skipped" | "cancelled";
+
+/**
+ * Doble uso intencional: documenta tanto el mecanismo que creó la tarea
+ * como su "tipo" (para qué es). Los seis valores específicos
+ * (initial_contact, demo_invitation, demo_confirmation, demo_reminder,
+ * post_demo_follow_up, no_show_recovery) corresponden 1:1 a los eventos
+ * automáticos de creación de tareas; status_change cubre el resto de
+ * cambios de estado del lead, y contact_log/manual son creaciones desde
+ * el admin. demo_confirmation (el lead se autoinscribe a una demo,
+ * plantilla confirmacion-demo) y demo_reminder (recordatorio más cerca de
+ * la fecha, plantilla recordatorio-demo) son eventos distintos: no
+ * confundir uno con otro.
+ */
+export type TaskSource =
+  | "initial_contact"
+  | "demo_invitation"
+  | "demo_confirmation"
+  | "demo_reminder"
+  | "post_demo_follow_up"
+  | "no_show_recovery"
+  | "status_change"
+  | "contact_log"
+  | "manual";
+
 export type LeadRow = {
   id: string;
   created_at: string;
@@ -301,6 +326,77 @@ export type ContentPostUpdate = {
   featured?: boolean;
 };
 
+export type MessageTemplateRow = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  key: string;
+  label: string;
+  body: string;
+  is_active: boolean;
+};
+
+export type MessageTemplateInsert = {
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+  key: string;
+  label: string;
+  body: string;
+  is_active?: boolean;
+};
+
+export type MessageTemplateUpdate = {
+  label?: string;
+  body?: string;
+  is_active?: boolean;
+};
+
+export type FollowUpTaskRow = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  lead_id: string;
+  demo_event_id: string | null;
+  contact_log_id: string | null;
+  created_by: string | null;
+  title: string;
+  message_template_key: string | null;
+  status: TaskStatus;
+  due_at: string;
+  source: TaskSource;
+  completed_at: string | null;
+  notes: string | null;
+};
+
+export type FollowUpTaskInsert = {
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+  lead_id: string;
+  demo_event_id?: string | null;
+  contact_log_id?: string | null;
+  created_by?: string | null;
+  title: string;
+  message_template_key?: string | null;
+  status?: TaskStatus;
+  due_at?: string;
+  source?: TaskSource;
+  completed_at?: string | null;
+  notes?: string | null;
+};
+
+export type FollowUpTaskUpdate = {
+  demo_event_id?: string | null;
+  contact_log_id?: string | null;
+  title?: string;
+  message_template_key?: string | null;
+  status?: TaskStatus;
+  due_at?: string;
+  completed_at?: string | null;
+  notes?: string | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -338,6 +434,18 @@ export type Database = {
         Row: ContentPostRow;
         Insert: ContentPostInsert;
         Update: ContentPostUpdate;
+        Relationships: [];
+      };
+      message_templates: {
+        Row: MessageTemplateRow;
+        Insert: MessageTemplateInsert;
+        Update: MessageTemplateUpdate;
+        Relationships: [];
+      };
+      follow_up_tasks: {
+        Row: FollowUpTaskRow;
+        Insert: FollowUpTaskInsert;
+        Update: FollowUpTaskUpdate;
         Relationships: [];
       };
     };

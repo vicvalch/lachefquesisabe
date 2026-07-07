@@ -1,42 +1,66 @@
-import type { LeadStatus } from "@/types/database";
-import type { WhatsAppTemplateId } from "@/lib/whatsapp/templates";
+import type { LeadStatus, TaskSource } from "@/types/database";
 
 export interface FollowUpSuggestion {
   taskLabel: string;
-  templateId: WhatsAppTemplateId;
+  templateKey: string;
+  source: TaskSource;
 }
 
 const DEFAULT_SUGGESTION: FollowUpSuggestion = {
   taskLabel: "Dar seguimiento",
-  templateId: "seguimiento",
+  templateKey: "recontacto-suave",
+  source: "status_change",
 };
 
 /**
- * Qué acción conviene hacer y qué plantilla de WhatsApp sugerir según el
- * estado comercial del lead. purchased/lost caen en DEFAULT_SUGGESTION: son
- * estados finales, si igual tienen next_follow_up_at es un caso raro que no
- * necesita una plantilla dedicada.
+ * Qué acción conviene hacer, qué plantilla de mensaje sugerir y bajo qué
+ * "source" (tipo de evento) registrar la tarea, según el estado comercial
+ * del lead. Esta misma sugerencia es la que usa
+ * `ensureFollowUpTaskForStatus` para crear la tarea automática al cambiar
+ * el estado del lead. purchased/lost no aparecen acá: son estados finales,
+ * ensureFollowUpTaskForStatus cancela sus tareas abiertas en vez de
+ * sugerir una nueva.
  */
 const FOLLOW_UP_SUGGESTIONS: Partial<Record<LeadStatus, FollowUpSuggestion>> = {
-  new: { taskLabel: "Enviar primer contacto", templateId: "primer_contacto" },
-  contacted: { taskLabel: "Dar seguimiento", templateId: "seguimiento" },
-  interested: { taskLabel: "Dar seguimiento", templateId: "seguimiento" },
+  new: {
+    taskLabel: "Enviar primer contacto",
+    templateKey: "primer-contacto",
+    source: "initial_contact",
+  },
+  contacted: {
+    taskLabel: "Dar seguimiento",
+    templateKey: "recontacto-suave",
+    source: "status_change",
+  },
+  interested: {
+    taskLabel: "Dar seguimiento",
+    templateKey: "recontacto-suave",
+    source: "status_change",
+  },
   invited_to_demo: {
     taskLabel: "Confirmar demo",
-    templateId: "recordatorio_demo",
+    templateKey: "invitacion-demo",
+    source: "demo_invitation",
   },
   confirmed_demo: {
     taskLabel: "Recordar demo",
-    templateId: "recordatorio_demo",
+    templateKey: "recordatorio-demo",
+    source: "demo_reminder",
   },
-  no_show: { taskLabel: "Reagendar", templateId: "seguimiento" },
+  no_show: {
+    taskLabel: "Reagendar",
+    templateKey: "recuperacion-no-show",
+    source: "no_show_recovery",
+  },
   attended: {
     taskLabel: "Seguimiento post-demo",
-    templateId: "post_demo",
+    templateKey: "seguimiento-post-demo",
+    source: "post_demo_follow_up",
   },
   post_demo_follow_up: {
     taskLabel: "Seguimiento post-demo",
-    templateId: "post_demo",
+    templateKey: "seguimiento-post-demo",
+    source: "post_demo_follow_up",
   },
 };
 

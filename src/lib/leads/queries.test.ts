@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { listFollowUpTasks, listLeads } from "./queries";
+import { listLeads } from "./queries";
 
 function buildQueryMock(result: { data: unknown[] | null; error: unknown }) {
   const calls: Record<string, unknown[][]> = {
@@ -7,11 +7,10 @@ function buildQueryMock(result: { data: unknown[] | null; error: unknown }) {
     order: [],
     limit: [],
     eq: [],
-    not: [],
   };
 
   const builder: Record<string, unknown> = {};
-  for (const method of ["select", "order", "limit", "eq", "not"]) {
+  for (const method of ["select", "order", "limit", "eq"]) {
     builder[method] = vi.fn((...args: unknown[]) => {
       calls[method].push(args);
       return builder;
@@ -75,38 +74,6 @@ describe("listLeads", () => {
     });
 
     const result = await listLeads(client);
-
-    expect(result).toEqual([]);
-  });
-});
-
-describe("listFollowUpTasks", () => {
-  it("pide leads con next_follow_up_at no nulo, ordenados ascendente y limitados a 200", async () => {
-    const { client, from, calls } = buildQueryMock({ data: [], error: null });
-
-    await listFollowUpTasks(client);
-
-    expect(from).toHaveBeenCalledWith("leads");
-    expect(calls.not).toEqual([["next_follow_up_at", "is", null]]);
-    expect(calls.order).toEqual([["next_follow_up_at", { ascending: true }]]);
-    expect(calls.limit).toEqual([[200]]);
-  });
-
-  it("respeta un límite custom", async () => {
-    const { client, calls } = buildQueryMock({ data: [], error: null });
-
-    await listFollowUpTasks(client, 20);
-
-    expect(calls.limit).toEqual([[20]]);
-  });
-
-  it("devuelve arreglo vacío si Supabase falla", async () => {
-    const { client } = buildQueryMock({
-      data: null,
-      error: { message: "db down" },
-    });
-
-    const result = await listFollowUpTasks(client);
 
     expect(result).toEqual([]);
   });

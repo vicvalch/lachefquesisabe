@@ -211,6 +211,7 @@ export async function updateAttendanceAction(
     supabase,
     registrationIdParsed.data,
     leadIdParsed.data,
+    demoIdParsed.data,
     parsed.data,
   );
 
