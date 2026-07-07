@@ -15,7 +15,7 @@ function buildTask(overrides: Partial<FollowUpTaskRow> = {}): FollowUpTaskRow {
     created_by: null,
     title: "Dar seguimiento",
     message_template_key: "seguimiento",
-    status: "pending",
+    status: "open",
     due_at: NOW.toISOString(),
     source: "manual",
     completed_at: null,

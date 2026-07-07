@@ -14,6 +14,7 @@ const baseLead: LeadRow = {
   source: "landing",
   consent_contact: true,
   notes: null,
+  next_follow_up_at: null,
   last_contacted_at: null,
 };
 

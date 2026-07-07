@@ -9,7 +9,7 @@ import { TASK_STATUS_LABELS } from "@/lib/validations/follow-up-task";
 import type { FollowUpTaskWithDemo } from "@/lib/leads/follow-up-tasks-queries";
 import type { LeadRow, MessageTemplateRow } from "@/types/database";
 
-function PendingTask({
+function OpenTask({
   task,
   lead,
   templates,
@@ -90,8 +90,8 @@ export function LeadFollowUpTasks({
   tasks: FollowUpTaskWithDemo[];
   templates: MessageTemplateRow[];
 }) {
-  const pending = tasks.filter((task) => task.status === "pending");
-  const history = tasks.filter((task) => task.status !== "pending");
+  const open = tasks.filter((task) => task.status === "open");
+  const history = tasks.filter((task) => task.status !== "open");
 
   if (tasks.length === 0) {
     return (
@@ -103,10 +103,10 @@ export function LeadFollowUpTasks({
 
   return (
     <div className="flex flex-col gap-4">
-      {pending.length > 0 && (
+      {open.length > 0 && (
         <ul className="flex flex-col gap-3">
-          {pending.map((task) => (
-            <PendingTask key={task.id} task={task} lead={lead} templates={templates} />
+          {open.map((task) => (
+            <OpenTask key={task.id} task={task} lead={lead} templates={templates} />
           ))}
         </ul>
       )}

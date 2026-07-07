@@ -11,15 +11,18 @@ export type FollowUpTaskLifecycleResult =
 /**
  * Mantiene la invariante de la tarea automática según el estado del lead:
  * - Si el lead llega a un estado final (purchased/lost), cancela las
- *   tareas pendientes en vez de crear una nueva: ya no hay nada que hacer.
- * - Si no, y el lead no tiene ninguna tarea pendiente todavía, crea una
- *   con el título y la plantilla sugeridos para ese estado.
- * - Si ya tiene una tarea pendiente, no crea otra (evita acumular tareas
+ *   tareas abiertas en vez de crear una nueva: ya no hay nada que hacer.
+ * - Si no, y el lead no tiene ninguna tarea abierta todavía, crea una
+ *   con el título, la plantilla y el source sugeridos para ese estado.
+ * - Si ya tiene una tarea abierta, no crea otra (evita acumular tareas
  *   duplicadas cada vez que se guarda el mismo estado).
  *
  * Se llama después de cualquier escritura de leads.status (desde el
  * formulario de detalle del lead o al sincronizar la asistencia a una
  * demo), sin necesidad de saber si el estado realmente cambió.
+ *
+ * No actualiza leads.next_follow_up_at directamente: eso lo mantiene al
+ * día un trigger sobre follow_up_tasks (ver 0006_follow_up_tasks.sql).
  */
 export async function ensureFollowUpTaskForStatus(
   supabase: SupabaseClient<Database>,
@@ -32,7 +35,7 @@ export async function ensureFollowUpTaskForStatus(
       .from("follow_up_tasks")
       .update({ status: "cancelled", completed_at: new Date().toISOString() })
       .eq("lead_id", leadId)
-      .eq("status", "pending");
+      .eq("status", "open");
 
     if (error) {
       return { ok: false, error: error.message };
@@ -40,18 +43,18 @@ export async function ensureFollowUpTaskForStatus(
     return { ok: true };
   }
 
-  const { data: pending, error: pendingError } = await supabase
+  const { data: openTasks, error: openTasksError } = await supabase
     .from("follow_up_tasks")
     .select("id")
     .eq("lead_id", leadId)
-    .eq("status", "pending")
+    .eq("status", "open")
     .limit(1);
 
-  if (pendingError) {
-    return { ok: false, error: pendingError.message };
+  if (openTasksError) {
+    return { ok: false, error: openTasksError.message };
   }
 
-  if (pending && pending.length > 0) {
+  if (openTasks && openTasks.length > 0) {
     return { ok: true };
   }
 
@@ -62,7 +65,7 @@ export async function ensureFollowUpTaskForStatus(
     title: suggestion.taskLabel,
     message_template_key: suggestion.templateKey,
     due_at: new Date().toISOString(),
-    source: "status_change",
+    source: suggestion.source,
   });
 
   if (insertError) {
@@ -79,7 +82,7 @@ export interface CompleteFollowUpTaskInput {
 /**
  * Completa una tarea creando un contact_log: la marca "completed" y la
  * enlaza con el registro de contacto que la resolvió. Solo afecta tareas
- * todavía "pending" (idempotente si se reintenta).
+ * todavía "open" (idempotente si se reintenta).
  */
 export async function completeFollowUpTask(
   supabase: SupabaseClient<Database>,
@@ -94,7 +97,7 @@ export async function completeFollowUpTask(
       contact_log_id: input.contactLogId,
     })
     .eq("id", taskId)
-    .eq("status", "pending");
+    .eq("status", "open");
 
   if (error) {
     return { ok: false, error: error.message };
@@ -104,8 +107,9 @@ export async function completeFollowUpTask(
 }
 
 /**
- * Salta una tarea sin registrar un contacto (por ejemplo: no se pudo
- * contactar todavía, o ya no aplica pero no amerita cancelarla del todo).
+ * Salta una tarea abierta sin registrar un contacto (por ejemplo: no se
+ * pudo contactar todavía, o ya no aplica pero no amerita cancelarla del
+ * todo).
  */
 export async function skipFollowUpTask(
   supabase: SupabaseClient<Database>,
@@ -120,7 +124,7 @@ export async function skipFollowUpTask(
       notes,
     })
     .eq("id", taskId)
-    .eq("status", "pending");
+    .eq("status", "open");
 
   if (error) {
     return { ok: false, error: error.message };
@@ -130,8 +134,8 @@ export async function skipFollowUpTask(
 }
 
 /**
- * Cancela una tarea: ya no aplica (por ejemplo, el lead cambió de estado
- * por otro medio, o se agregó por error).
+ * Cancela una tarea abierta: ya no aplica (por ejemplo, el lead cambió de
+ * estado por otro medio, o se agregó por error).
  */
 export async function cancelFollowUpTask(
   supabase: SupabaseClient<Database>,
@@ -146,7 +150,7 @@ export async function cancelFollowUpTask(
       notes,
     })
     .eq("id", taskId)
-    .eq("status", "pending");
+    .eq("status", "open");
 
   if (error) {
     return { ok: false, error: error.message };
@@ -156,7 +160,7 @@ export async function cancelFollowUpTask(
 }
 
 /**
- * Reprograma una tarea pendiente a una nueva fecha, sin tocar su estado.
+ * Reprograma una tarea abierta a una nueva fecha, sin tocar su estado.
  */
 export async function rescheduleFollowUpTask(
   supabase: SupabaseClient<Database>,
@@ -167,7 +171,7 @@ export async function rescheduleFollowUpTask(
     .from("follow_up_tasks")
     .update({ due_at: dueAt })
     .eq("id", taskId)
-    .eq("status", "pending");
+    .eq("status", "open");
 
   if (error) {
     return { ok: false, error: error.message };

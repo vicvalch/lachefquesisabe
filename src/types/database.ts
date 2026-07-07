@@ -51,12 +51,24 @@ export type ContentStatus = "draft" | "published" | "archived";
 
 export type ContentDifficulty = "easy" | "medium" | "hard";
 
-export type TaskStatus = "pending" | "completed" | "skipped" | "cancelled";
+export type TaskStatus = "open" | "completed" | "skipped" | "cancelled";
 
+/**
+ * Doble uso intencional: documenta tanto el mecanismo que creó la tarea
+ * como su "tipo" (para qué es). Los cinco valores específicos
+ * (initial_contact, demo_invitation, demo_confirmation,
+ * post_demo_follow_up, no_show_recovery) corresponden 1:1 a los eventos
+ * automáticos de creación de tareas; status_change cubre el resto de
+ * cambios de estado del lead, y contact_log/manual son creaciones desde
+ * el admin.
+ */
 export type TaskSource =
-  | "lead_created"
+  | "initial_contact"
+  | "demo_invitation"
+  | "demo_confirmation"
+  | "post_demo_follow_up"
+  | "no_show_recovery"
   | "status_change"
-  | "demo_registration"
   | "contact_log"
   | "manual";
 
@@ -72,6 +84,7 @@ export type LeadRow = {
   source: string;
   consent_contact: boolean;
   notes: string | null;
+  next_follow_up_at: string | null;
   last_contacted_at: string | null;
 };
 
@@ -87,6 +100,7 @@ export type LeadInsert = {
   source?: string;
   consent_contact: boolean;
   notes?: string | null;
+  next_follow_up_at?: string | null;
   last_contacted_at?: string | null;
 };
 
@@ -100,6 +114,7 @@ export type LeadUpdate = {
   source?: string;
   consent_contact?: boolean;
   notes?: string | null;
+  next_follow_up_at?: string | null;
   last_contacted_at?: string | null;
 };
 

@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { TaskStatus } from "@/types/database";
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
-  pending: "Pendiente",
+  open: "Abierta",
   completed: "Completada",
   skipped: "Saltada",
   cancelled: "Cancelada",

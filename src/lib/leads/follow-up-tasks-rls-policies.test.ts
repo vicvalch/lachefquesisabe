@@ -12,8 +12,8 @@ const migrationSql = readFileSync(
  * Guardia de regresión (no reemplaza probar RLS contra Postgres real): las
  * tareas de seguimiento y las plantillas de mensaje son de uso exclusivo
  * del equipo admin. La única escritura pública indirecta permitida es la
- * de los dos triggers `security definer`, acotados a un insert puntual
- * cada uno.
+ * de los tres triggers `security definer`, acotados a un insert/update
+ * puntual cada uno.
  */
 describe("RLS de follow_up_tasks y message_templates", () => {
   it("no otorga a anon ningún permiso sobre follow_up_tasks", () => {
@@ -46,20 +46,62 @@ describe("RLS de follow_up_tasks y message_templates", () => {
     );
   });
 
-  it("los triggers automáticos corren security definer", () => {
+  it("los tres triggers automáticos corren security definer", () => {
     expect(migrationSql).toMatch(
       /create_initial_follow_up_task[\s\S]*?security definer/,
     );
     expect(migrationSql).toMatch(
       /create_demo_follow_up_task[\s\S]*?security definer/,
     );
+    expect(migrationSql).toMatch(
+      /sync_lead_next_follow_up_at[\s\S]*?security definer/,
+    );
   });
 
-  it("la tarea inicial de un lead nuevo solo se crea cuando status = 'new'", () => {
+  it("no elimina leads.next_follow_up_at: se mantiene como snapshot derivado", () => {
+    expect(migrationSql).not.toMatch(/drop column.*next_follow_up_at/i);
+  });
+
+  it("mantiene leads.next_follow_up_at sincronizado con la tarea open más próxima", () => {
+    expect(migrationSql).toMatch(
+      /after insert or update or delete on public\.follow_up_tasks/,
+    );
+    expect(migrationSql).toMatch(/status = 'open'/);
+    expect(migrationSql).toMatch(/set next_follow_up_at = next_due_at/);
+  });
+
+  it("la tarea inicial de un lead nuevo (initial_contact) solo se crea cuando status = 'new'", () => {
     expect(migrationSql).toMatch(/if new\.status = 'new' then/);
+    expect(migrationSql).toMatch(/'primer-contacto', now\(\), 'initial_contact'/);
   });
 
-  it("la tarea de demo evita duplicados por lead+demo mientras esté pendiente", () => {
-    expect(migrationSql).toMatch(/status = 'pending'/);
+  it("la inscripción a demo crea demo_invitation (registered) o demo_confirmation (confirmed)", () => {
+    expect(migrationSql).toMatch(
+      /new\.attendance_status = 'registered'[\s\S]*?'demo_invitation'/,
+    );
+    expect(migrationSql).toMatch(
+      /new\.attendance_status = 'confirmed'[\s\S]*?'demo_confirmation'/,
+    );
+  });
+
+  it("la tarea de demo evita duplicados por lead+demo mientras esté open", () => {
+    expect(migrationSql).toMatch(/status = 'open'/);
+  });
+
+  it("siembra las 8 plantillas de mensaje requeridas", () => {
+    const expectedKeys = [
+      "primer-contacto",
+      "invitacion-demo",
+      "confirmacion-demo",
+      "recordatorio-demo",
+      "seguimiento-post-demo",
+      "recuperacion-no-show",
+      "recontacto-suave",
+      "seguimiento-compra",
+    ];
+
+    for (const key of expectedKeys) {
+      expect(migrationSql).toMatch(new RegExp(`'${key}',`));
+    }
   });
 });

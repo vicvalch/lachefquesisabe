@@ -13,18 +13,19 @@ import type {
 } from "@/types/database";
 
 const DEFAULT_TEMPLATE_KEY_BY_ATTENDANCE: Record<AttendanceStatus, string> = {
-  registered: "invitacion_demo",
-  confirmed: "recordatorio_demo",
-  attended: "post_demo",
-  no_show: "reagendar",
-  cancelled: "invitacion_demo",
+  registered: "invitacion-demo",
+  confirmed: "recordatorio-demo",
+  attended: "seguimiento-post-demo",
+  no_show: "recuperacion-no-show",
+  cancelled: "invitacion-demo",
 };
 
 const DEMO_TEMPLATE_KEYS = [
-  "invitacion_demo",
-  "recordatorio_demo",
-  "post_demo",
-  "reagendar",
+  "invitacion-demo",
+  "confirmacion-demo",
+  "recordatorio-demo",
+  "seguimiento-post-demo",
+  "recuperacion-no-show",
 ];
 
 /**

@@ -32,3 +32,20 @@ export async function getMessageTemplateByKey(
 
   return data;
 }
+
+export async function getMessageTemplateById(
+  supabase: SupabaseClient<Database>,
+  id: string,
+): Promise<MessageTemplateRow | null> {
+  const { data, error } = await supabase
+    .from("message_templates")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data;
+}

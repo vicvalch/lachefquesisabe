@@ -105,7 +105,7 @@ describe("addContactLog", () => {
     expect(payload.status).toBe("completed");
     expect(payload.contact_log_id).toBe("log-1");
     expect(taskEq1).toHaveBeenCalledWith("id", "task-1");
-    expect(taskEq2).toHaveBeenCalledWith("status", "pending");
+    expect(taskEq2).toHaveBeenCalledWith("status", "open");
   });
 
   it("crea una tarea nueva cuando viene next_follow_up_at", async () => {
@@ -122,7 +122,7 @@ describe("addContactLog", () => {
       lead_id: "lead-1",
       demo_event_id: null,
       title: "Dar seguimiento",
-      message_template_key: "seguimiento",
+      message_template_key: "recontacto-suave",
       due_at: "2026-08-01T10:00:00.000Z",
       source: "manual",
       created_by: "user-1",

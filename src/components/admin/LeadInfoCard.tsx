@@ -7,13 +7,7 @@ import {
 import { formatDateTime } from "@/lib/utils";
 import type { LeadRow } from "@/types/database";
 
-export function LeadInfoCard({
-  lead,
-  nextTaskDueAt,
-}: {
-  lead: LeadRow;
-  nextTaskDueAt: string | null;
-}) {
+export function LeadInfoCard({ lead }: { lead: LeadRow }) {
   return (
     <Card className="flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -83,10 +77,12 @@ export function LeadInfoCard({
         </div>
         <div>
           <dt className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
-            Próxima tarea
+            Próximo seguimiento
           </dt>
           <dd className="text-sm text-ink">
-            {nextTaskDueAt ? formatDateTime(nextTaskDueAt) : "Sin tareas pendientes"}
+            {lead.next_follow_up_at
+              ? formatDateTime(lead.next_follow_up_at)
+              : "Sin tareas abiertas"}
           </dd>
         </div>
       </dl>

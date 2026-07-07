@@ -16,8 +16,8 @@ function buildTask(overrides: Partial<FollowUpTaskRow> = {}): FollowUpTaskRow {
     contact_log_id: null,
     created_by: null,
     title: "Dar seguimiento",
-    message_template_key: "seguimiento",
-    status: "pending",
+    message_template_key: "recontacto-suave",
+    status: "open",
     due_at: new Date(0).toISOString(),
     source: "manual",
     completed_at: null,
@@ -39,6 +39,7 @@ function buildLead(overrides: Partial<LeadRow> = {}): LeadRow {
     source: "landing",
     consent_contact: true,
     notes: null,
+    next_follow_up_at: null,
     last_contacted_at: null,
     ...overrides,
   };
@@ -71,7 +72,7 @@ function buildMock(tables: Record<string, { data: unknown; error: unknown }>) {
 }
 
 describe("listOpenFollowUpTasks", () => {
-  it("pide tareas pending ordenadas por due_at y las enlaza con su lead", async () => {
+  it("pide tareas open ordenadas por due_at y las enlaza con su lead", async () => {
     const task = buildTask();
     const lead = buildLead();
     const { client, calls } = buildMock({
@@ -82,7 +83,7 @@ describe("listOpenFollowUpTasks", () => {
 
     const result = await listOpenFollowUpTasks(client);
 
-    expect(calls["follow_up_tasks.eq"]).toEqual([["status", "pending"]]);
+    expect(calls["follow_up_tasks.eq"]).toEqual([["status", "open"]]);
     expect(calls["follow_up_tasks.order"]).toEqual([["due_at", { ascending: true }]]);
     expect(calls["follow_up_tasks.limit"]).toEqual([[200]]);
     expect(result).toEqual([{ ...task, lead, demo: null }]);
@@ -124,7 +125,7 @@ describe("listDueFollowUpTasks", () => {
 
     await listDueFollowUpTasks(client, 3);
 
-    expect(calls["follow_up_tasks.eq"]).toEqual([["status", "pending"]]);
+    expect(calls["follow_up_tasks.eq"]).toEqual([["status", "open"]]);
     expect(calls["follow_up_tasks.limit"]).toEqual([[3]]);
     expect(calls["follow_up_tasks.lte"]).toHaveLength(1);
     expect(calls["follow_up_tasks.lte"][0][0]).toBe("due_at");

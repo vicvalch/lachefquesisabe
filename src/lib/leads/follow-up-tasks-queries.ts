@@ -56,7 +56,7 @@ async function attachLeadsAndDemos(
 }
 
 /**
- * Todas las tareas pendientes, para el Centro de Seguimientos. La
+ * Todas las tareas abiertas, para el Centro de Seguimientos. La
  * agrupación en vencidas/hoy/próximas la hace groupFollowUpTasks sobre
  * due_at.
  */
@@ -67,7 +67,7 @@ export async function listOpenFollowUpTasks(
   const { data, error } = await supabase
     .from("follow_up_tasks")
     .select("*")
-    .eq("status", "pending")
+    .eq("status", "open")
     .order("due_at", { ascending: true })
     .limit(limit);
 
@@ -79,7 +79,7 @@ export async function listOpenFollowUpTasks(
 }
 
 /**
- * Tareas pendientes ya vencidas o de hoy, para el widget "Seguimientos
+ * Tareas abiertas ya vencidas o de hoy, para el widget "Seguimientos
  * pendientes" del dashboard.
  */
 export async function listDueFollowUpTasks(
@@ -91,7 +91,7 @@ export async function listDueFollowUpTasks(
   const { data, error } = await supabase
     .from("follow_up_tasks")
     .select("*")
-    .eq("status", "pending")
+    .eq("status", "open")
     .lte("due_at", nowIso)
     .order("due_at", { ascending: true })
     .limit(limit);
@@ -108,7 +108,7 @@ export interface FollowUpTaskWithDemo extends FollowUpTaskRow {
 }
 
 /**
- * Todas las tareas (pendientes e historial) de un lead, para su detalle.
+ * Todas las tareas (abiertas e historial) de un lead, para su detalle.
  */
 export async function listFollowUpTasksForLead(
   supabase: SupabaseClient<Database>,

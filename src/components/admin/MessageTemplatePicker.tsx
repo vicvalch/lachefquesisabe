@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -68,9 +69,9 @@ export function MessageTemplatePicker({
     return (
       <p className="text-xs text-ink-soft">
         Todavía no hay plantillas de mensaje activas. Crea o activa una desde{" "}
-        <a href="/admin/plantillas" className="font-semibold underline">
+        <Link href="/admin/plantillas" className="font-semibold underline">
           /admin/plantillas
-        </a>
+        </Link>
         .
       </p>
     );

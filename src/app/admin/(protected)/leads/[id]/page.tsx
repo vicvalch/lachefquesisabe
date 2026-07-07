@@ -37,12 +37,8 @@ export default async function LeadDetailPage({
     listMessageTemplates(supabase),
   ]);
 
-  const pendingTasks = tasks.filter((task) => task.status === "pending");
-  const nextTaskDueAt =
-    pendingTasks
-      .map((task) => task.due_at)
-      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0] ?? null;
-  const activeTaskId = pendingTasks.length === 1 ? pendingTasks[0].id : undefined;
+  const openTasks = tasks.filter((task) => task.status === "open");
+  const activeTaskId = openTasks.length === 1 ? openTasks[0].id : undefined;
 
   return (
     <div className="flex flex-col gap-6">
@@ -55,7 +51,7 @@ export default async function LeadDetailPage({
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">
-          <LeadInfoCard lead={lead} nextTaskDueAt={nextTaskDueAt} />
+          <LeadInfoCard lead={lead} />
 
           <Card>
             <h2 className="font-display text-lg font-semibold text-ink">

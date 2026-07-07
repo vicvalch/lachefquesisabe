@@ -25,7 +25,7 @@ describe("ensureFollowUpTaskForStatus", () => {
     vi.useRealTimers();
   });
 
-  it("cancela las tareas pendientes cuando el estado es final (purchased)", async () => {
+  it("cancela las tareas abiertas cuando el estado es final (purchased)", async () => {
     const { update, eq1, eq2 } = buildUpdateChain({ error: null });
     const from = vi.fn().mockReturnValue({ update });
 
@@ -42,10 +42,10 @@ describe("ensureFollowUpTaskForStatus", () => {
       completed_at: "2026-07-10T12:00:00.000Z",
     });
     expect(eq1).toHaveBeenCalledWith("lead_id", "lead-1");
-    expect(eq2).toHaveBeenCalledWith("status", "pending");
+    expect(eq2).toHaveBeenCalledWith("status", "open");
   });
 
-  it("cancela las tareas pendientes cuando el estado es final (lost)", async () => {
+  it("cancela las tareas abiertas cuando el estado es final (lost)", async () => {
     const { update } = buildUpdateChain({ error: null });
     const from = vi.fn().mockReturnValue({ update });
 
@@ -61,7 +61,7 @@ describe("ensureFollowUpTaskForStatus", () => {
     );
   });
 
-  it("no crea una tarea nueva si ya hay una pendiente", async () => {
+  it("no crea una tarea nueva si ya hay una abierta", async () => {
     const limit = vi.fn().mockResolvedValue({
       data: [{ id: "existing-task" }],
       error: null,
@@ -82,7 +82,7 @@ describe("ensureFollowUpTaskForStatus", () => {
     expect(insert).not.toHaveBeenCalled();
   });
 
-  it("crea una tarea con la sugerencia del estado cuando no hay ninguna pendiente", async () => {
+  it("crea una tarea con la sugerencia del estado cuando no hay ninguna abierta", async () => {
     const limit = vi.fn().mockResolvedValue({ data: [], error: null });
     const eq2 = vi.fn().mockReturnValue({ limit });
     const eq1 = vi.fn().mockReturnValue({ eq: eq2 });
@@ -102,9 +102,9 @@ describe("ensureFollowUpTaskForStatus", () => {
       lead_id: "lead-1",
       demo_event_id: "demo-1",
       title: "Confirmar demo",
-      message_template_key: "invitacion_demo",
+      message_template_key: "invitacion-demo",
       due_at: "2026-07-10T12:00:00.000Z",
-      source: "status_change",
+      source: "demo_invitation",
     });
   });
 
@@ -154,7 +154,7 @@ describe("completeFollowUpTask", () => {
     expect(payload.status).toBe("completed");
     expect(payload.contact_log_id).toBe("log-1");
     expect(eq1).toHaveBeenCalledWith("id", "task-1");
-    expect(eq2).toHaveBeenCalledWith("status", "pending");
+    expect(eq2).toHaveBeenCalledWith("status", "open");
   });
 
   it("devuelve el error cuando Supabase falla", async () => {
@@ -185,7 +185,7 @@ describe("skipFollowUpTask", () => {
     expect(payload.status).toBe("skipped");
     expect(payload.notes).toBe("No contestó");
     expect(eq1).toHaveBeenCalledWith("id", "task-1");
-    expect(eq2).toHaveBeenCalledWith("status", "pending");
+    expect(eq2).toHaveBeenCalledWith("status", "open");
   });
 });
 
@@ -216,7 +216,7 @@ describe("rescheduleFollowUpTask", () => {
     expect(result).toEqual({ ok: true });
     expect(update).toHaveBeenCalledWith({ due_at: "2026-08-01T10:00:00.000Z" });
     expect(eq1).toHaveBeenCalledWith("id", "task-1");
-    expect(eq2).toHaveBeenCalledWith("status", "pending");
+    expect(eq2).toHaveBeenCalledWith("status", "open");
   });
 });
 
@@ -229,7 +229,7 @@ describe("createFollowUpTask", () => {
       leadId: "lead-1",
       title: "Llamar de nuevo",
       dueAt: "2026-08-01T10:00:00.000Z",
-      messageTemplateKey: "seguimiento",
+      messageTemplateKey: "recontacto-suave",
       demoEventId: null,
       createdBy: "user-1",
     });
@@ -240,7 +240,7 @@ describe("createFollowUpTask", () => {
       lead_id: "lead-1",
       demo_event_id: null,
       title: "Llamar de nuevo",
-      message_template_key: "seguimiento",
+      message_template_key: "recontacto-suave",
       due_at: "2026-08-01T10:00:00.000Z",
       source: "manual",
       created_by: "user-1",

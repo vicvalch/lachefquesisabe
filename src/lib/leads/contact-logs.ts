@@ -15,9 +15,10 @@ export type AddContactLogResult = { ok: true } | { ok: false; error: string };
  *    del Centro de Seguimientos o del detalle del lead), completa esa
  *    tarea y la enlaza con este contact_log.
  * 3. Si se indicó `next_follow_up_at`, crea una nueva tarea de seguimiento
- *    pendiente para esa fecha (reemplaza el antiguo
- *    leads.next_follow_up_at: ahora cada seguimiento programado es una
- *    tarea propia, no un campo suelto en el lead).
+ *    abierta para esa fecha (follow_up_tasks es la fuente real de cada
+ *    seguimiento programado; leads.next_follow_up_at solo se actualiza
+ *    como snapshot derivado, vía un trigger sobre follow_up_tasks, nunca
+ *    directamente desde acá).
  */
 export async function addContactLog(
   supabase: SupabaseClient<Database>,
@@ -69,7 +70,7 @@ export async function addContactLog(
       leadId,
       title: "Dar seguimiento",
       dueAt: input.next_follow_up_at,
-      messageTemplateKey: "seguimiento",
+      messageTemplateKey: "recontacto-suave",
       demoEventId: null,
       createdBy,
     });
