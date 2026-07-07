@@ -128,6 +128,9 @@ describe("updateContentPost", () => {
 
     const result = await updateContentPost(client, "post-1", baseInput);
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No pudimos guardar los cambios. Intenta de nuevo.",
+    });
   });
 });

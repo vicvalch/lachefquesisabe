@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMessageTemplateById } from "@/lib/message-templates/queries";
 import { MessageTemplateForm } from "@/components/admin/MessageTemplateForm";
+import { EntityNotFoundCard } from "@/components/admin/EntityNotFoundCard";
 import { Card } from "@/components/ui/Card";
 
 export const metadata = {
@@ -19,7 +19,14 @@ export default async function EditMessageTemplatePage({
   const template = await getMessageTemplateById(supabase, id);
 
   if (!template) {
-    notFound();
+    return (
+      <EntityNotFoundCard
+        title="No encontramos esta plantilla"
+        description="Puede haber sido eliminada o el enlace no es correcto."
+        backHref="/admin/plantillas"
+        backLabel="Volver a plantillas"
+      />
+    );
   }
 
   return (

@@ -18,7 +18,7 @@ export async function updateLeadSegment(
     .eq("id", id);
 
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: "No pudimos guardar el segmento. Intenta de nuevo." };
   }
 
   return { ok: true };

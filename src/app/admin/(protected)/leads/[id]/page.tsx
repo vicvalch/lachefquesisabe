@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getLeadById, listContactLogs } from "@/lib/leads/queries";
 import { listFollowUpTasksForLead } from "@/lib/leads/follow-up-tasks-queries";
@@ -14,6 +13,7 @@ import { MessageTemplatePicker } from "@/components/admin/MessageTemplatePicker"
 import { LeadFollowUpTasks } from "@/components/admin/LeadFollowUpTasks";
 import { ScheduleFollowUpForm } from "@/components/admin/ScheduleFollowUpForm";
 import { LeadCampaignMemberships } from "@/components/admin/LeadCampaignMemberships";
+import { EntityNotFoundCard } from "@/components/admin/EntityNotFoundCard";
 import { Card } from "@/components/ui/Card";
 
 export const metadata = {
@@ -30,7 +30,14 @@ export default async function LeadDetailPage({
   const lead = await getLeadById(supabase, id);
 
   if (!lead) {
-    notFound();
+    return (
+      <EntityNotFoundCard
+        title="No encontramos este lead"
+        description="Puede haber sido eliminado o el enlace no es correcto."
+        backHref="/admin/leads"
+        backLabel="Volver a leads"
+      />
+    );
   }
 
   const [contactLogs, tasks, templates, campaignMemberships] = await Promise.all([

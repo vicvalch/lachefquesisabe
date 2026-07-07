@@ -43,7 +43,10 @@ describe("createLead", () => {
 
     const result = await createLead(client, validInput);
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No pudimos guardar tu información. Intenta de nuevo.",
+    });
   });
 
   it("ignora campos internos aunque vengan en el input", async () => {

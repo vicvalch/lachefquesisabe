@@ -12,7 +12,8 @@ export function OutreachCampaignsTable({
   if (campaigns.length === 0) {
     return (
       <p className="rounded-2xl border border-dashed border-ink/20 p-6 text-center text-sm text-ink-soft">
-        Todavía no hay campañas.
+        Todavía no hay campañas manuales. Creá una para agrupar el
+        seguimiento de un segmento de leads.
       </p>
     );
   }

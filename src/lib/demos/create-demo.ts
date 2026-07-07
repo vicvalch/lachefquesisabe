@@ -47,7 +47,7 @@ export async function createDemoEvent(
         error: "Ya existe una demo con ese identificador. Intenta de nuevo.",
       };
     }
-    return { ok: false, error: error?.message ?? "No se pudo crear la demo." };
+    return { ok: false, error: "No se pudo crear la demo. Intenta de nuevo." };
   }
 
   return { ok: true, id: data.id, slug: data.slug };

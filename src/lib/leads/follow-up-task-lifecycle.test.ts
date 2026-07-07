@@ -118,7 +118,10 @@ describe("ensureFollowUpTaskForStatus", () => {
       "purchased",
     );
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No pudimos actualizar la tarea de seguimiento. Intenta de nuevo.",
+    });
   });
 
   it("devuelve el error si falla la inserción", async () => {
@@ -135,7 +138,10 @@ describe("ensureFollowUpTaskForStatus", () => {
       "new",
     );
 
-    expect(result).toEqual({ ok: false, error: "insert failed" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No pudimos crear la tarea de seguimiento. Intenta de nuevo.",
+    });
   });
 });
 
@@ -165,7 +171,10 @@ describe("completeFollowUpTask", () => {
       contactLogId: "log-1",
     });
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No pudimos completar la tarea de seguimiento. Intenta de nuevo.",
+    });
   });
 });
 
@@ -260,6 +269,9 @@ describe("createFollowUpTask", () => {
       createdBy: null,
     });
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No pudimos crear la tarea de seguimiento. Intenta de nuevo.",
+    });
   });
 });

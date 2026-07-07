@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
   getDemoEventById,
@@ -12,6 +11,7 @@ import { DemoEventInfoCard } from "@/components/admin/DemoEventInfoCard";
 import { DemoEventStatusForm } from "@/components/admin/DemoEventStatusForm";
 import { DemoRegistrationForm } from "@/components/admin/DemoRegistrationForm";
 import { DemoRosterTable } from "@/components/admin/DemoRosterTable";
+import { EntityNotFoundCard } from "@/components/admin/EntityNotFoundCard";
 import { Card } from "@/components/ui/Card";
 
 export const metadata = {
@@ -28,7 +28,14 @@ export default async function DemoDetailPage({
   const demo = await getDemoEventById(supabase, id);
 
   if (!demo) {
-    notFound();
+    return (
+      <EntityNotFoundCard
+        title="No encontramos esta demo"
+        description="Puede haber sido eliminada o el enlace no es correcto."
+        backHref="/admin/demos"
+        backLabel="Volver a demos"
+      />
+    );
   }
 
   const [counts, registrations, availableLeads, templates] = await Promise.all([

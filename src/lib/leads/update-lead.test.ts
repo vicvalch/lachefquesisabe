@@ -105,6 +105,9 @@ describe("updateLead", () => {
 
     const result = await updateLead(client, "lead-1", baseInput);
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No pudimos guardar los cambios. Intenta de nuevo.",
+    });
   });
 });

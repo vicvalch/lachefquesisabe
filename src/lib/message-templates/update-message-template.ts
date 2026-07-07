@@ -27,7 +27,7 @@ export async function updateMessageTemplate(
     .eq("id", templateId);
 
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: "No pudimos guardar la plantilla. Intenta de nuevo." };
   }
 
   return { ok: true };

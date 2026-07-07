@@ -38,7 +38,7 @@ export async function ensureFollowUpTaskForStatus(
       .eq("status", "open");
 
     if (error) {
-      return { ok: false, error: error.message };
+      return { ok: false, error: "No pudimos actualizar la tarea de seguimiento. Intenta de nuevo." };
     }
     return { ok: true };
   }
@@ -51,7 +51,7 @@ export async function ensureFollowUpTaskForStatus(
     .limit(1);
 
   if (openTasksError) {
-    return { ok: false, error: openTasksError.message };
+    return { ok: false, error: "No pudimos revisar las tareas abiertas del lead. Intenta de nuevo." };
   }
 
   if (openTasks && openTasks.length > 0) {
@@ -69,7 +69,7 @@ export async function ensureFollowUpTaskForStatus(
   });
 
   if (insertError) {
-    return { ok: false, error: insertError.message };
+    return { ok: false, error: "No pudimos crear la tarea de seguimiento. Intenta de nuevo." };
   }
 
   return { ok: true };
@@ -100,7 +100,7 @@ export async function completeFollowUpTask(
     .eq("status", "open");
 
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: "No pudimos completar la tarea de seguimiento. Intenta de nuevo." };
   }
 
   return { ok: true };
@@ -127,7 +127,7 @@ export async function skipFollowUpTask(
     .eq("status", "open");
 
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: "No pudimos saltar la tarea de seguimiento. Intenta de nuevo." };
   }
 
   return { ok: true };
@@ -153,7 +153,7 @@ export async function cancelFollowUpTask(
     .eq("status", "open");
 
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: "No pudimos cancelar la tarea de seguimiento. Intenta de nuevo." };
   }
 
   return { ok: true };
@@ -174,7 +174,7 @@ export async function rescheduleFollowUpTask(
     .eq("status", "open");
 
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: "No pudimos reprogramar la tarea de seguimiento. Intenta de nuevo." };
   }
 
   return { ok: true };
@@ -208,7 +208,7 @@ export async function createFollowUpTask(
   });
 
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: "No pudimos crear la tarea de seguimiento. Intenta de nuevo." };
   }
 
   return { ok: true };

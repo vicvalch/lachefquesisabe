@@ -25,7 +25,7 @@ export async function updateDemoEventStatus(
     .eq("id", demoEventId);
 
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: "No pudimos guardar los cambios de la demo. Intenta de nuevo." };
   }
 
   return { ok: true };

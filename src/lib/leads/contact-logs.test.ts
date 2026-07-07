@@ -136,7 +136,10 @@ describe("addContactLog", () => {
 
     const result = await addContactLog(client, "lead-1", "user-1", baseInput);
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No se pudo registrar el contacto. Intenta de nuevo.",
+    });
     expect(leadUpdate).not.toHaveBeenCalled();
   });
 
@@ -147,7 +150,10 @@ describe("addContactLog", () => {
 
     const result = await addContactLog(client, "lead-1", "user-1", baseInput);
 
-    expect(result).toEqual({ ok: false, error: "update failed" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No pudimos actualizar el último contacto. Intenta de nuevo.",
+    });
   });
 
   it("devuelve el error si falla completar la tarea", async () => {
@@ -160,7 +166,10 @@ describe("addContactLog", () => {
       task_id: "task-1",
     });
 
-    expect(result).toEqual({ ok: false, error: "task update failed" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No pudimos completar la tarea de seguimiento. Intenta de nuevo.",
+    });
   });
 
   it("devuelve el error si falla crear la nueva tarea", async () => {
@@ -173,6 +182,9 @@ describe("addContactLog", () => {
       next_follow_up_at: "2026-08-01T10:00:00.000Z",
     });
 
-    expect(result).toEqual({ ok: false, error: "task insert failed" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No pudimos crear la tarea de seguimiento. Intenta de nuevo.",
+    });
   });
 });

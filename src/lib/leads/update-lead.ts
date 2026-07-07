@@ -33,7 +33,7 @@ export async function updateLead(
     .eq("id", leadId);
 
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: "No pudimos guardar los cambios. Intenta de nuevo." };
   }
 
   return ensureFollowUpTaskForStatus(supabase, leadId, input.status);
