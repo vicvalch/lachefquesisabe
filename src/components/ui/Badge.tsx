@@ -106,6 +106,38 @@ export function AttendanceStatusBadge({
   );
 }
 
+export type CampaignStatus = "draft" | "sent";
+
+const campaignStatusClasses: Record<CampaignStatus, string> = {
+  draft: "bg-ink/10 text-ink-soft",
+  sent: "bg-olive-500/25 text-olive-600",
+};
+
+interface CampaignStatusBadgeProps extends HTMLAttributes<HTMLSpanElement> {
+  status: CampaignStatus;
+  label: string;
+}
+
+export function CampaignStatusBadge({
+  status,
+  label,
+  className,
+  ...props
+}: CampaignStatusBadgeProps) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
+        campaignStatusClasses[status],
+        className,
+      )}
+      {...props}
+    >
+      {label}
+    </span>
+  );
+}
+
 const contentStatusClasses: Record<ContentStatus, string> = {
   draft: "bg-ink/10 text-ink-soft",
   published: "bg-olive-500/25 text-olive-600",

@@ -6,6 +6,8 @@ const NAV_LINKS = [
   { href: "/admin/dashboard", label: "Dashboard" },
   { href: "/admin/seguimientos", label: "Seguimientos" },
   { href: "/admin/leads", label: "Leads" },
+  { href: "/admin/segmentos", label: "Segmentos" },
+  { href: "/admin/campanas", label: "Campañas" },
   { href: "/admin/demos", label: "Demos" },
   { href: "/admin/content", label: "Contenido" },
   { href: "/admin/plantillas", label: "Plantillas" },

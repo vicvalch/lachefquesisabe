@@ -8,7 +8,7 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   cancelled: "Cancelada",
 };
 
-const dueAtSchema = z
+export const dueAtSchema = z
   .string()
   .min(1, "Selecciona una fecha")
   .refine(
