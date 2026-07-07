@@ -38,7 +38,7 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
                 </Link>
               </td>
               <td className="px-4 py-3 text-ink-soft">
-                <div>{lead.email}</div>
+                {lead.email && <div>{lead.email}</div>}
                 {lead.phone && <div>{lead.phone}</div>}
               </td>
               <td className="px-4 py-3 text-ink-soft">

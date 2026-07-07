@@ -29,11 +29,27 @@ export type ContactChannel =
 
 export type ContactDirection = "outbound" | "inbound";
 
+export type DemoMode = "in_person" | "virtual";
+
+export type DemoEventStatus =
+  | "draft"
+  | "scheduled"
+  | "full"
+  | "completed"
+  | "cancelled";
+
+export type AttendanceStatus =
+  | "registered"
+  | "confirmed"
+  | "attended"
+  | "no_show"
+  | "cancelled";
+
 export type LeadRow = {
   id: string;
   created_at: string;
   name: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   primary_interest: PrimaryInterest;
   message: string | null;
@@ -49,7 +65,7 @@ export type LeadInsert = {
   id?: string;
   created_at?: string;
   name: string;
-  email: string;
+  email?: string | null;
   phone?: string | null;
   primary_interest: PrimaryInterest;
   message?: string | null;
@@ -99,6 +115,85 @@ export type ContactLogInsert = {
   next_follow_up_at?: string | null;
 };
 
+export type DemoEventRow = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+  title: string;
+  slug: string;
+  mode: DemoMode;
+  status: DemoEventStatus;
+  starts_at: string;
+  ends_at: string | null;
+  location_name: string | null;
+  location_address: string | null;
+  meeting_url: string | null;
+  capacity: number;
+  description: string | null;
+  public_notes: string | null;
+  internal_notes: string | null;
+};
+
+export type DemoEventInsert = {
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string | null;
+  title: string;
+  slug: string;
+  mode: DemoMode;
+  status?: DemoEventStatus;
+  starts_at: string;
+  ends_at?: string | null;
+  location_name?: string | null;
+  location_address?: string | null;
+  meeting_url?: string | null;
+  capacity: number;
+  description?: string | null;
+  public_notes?: string | null;
+  internal_notes?: string | null;
+};
+
+export type DemoEventUpdate = {
+  title?: string;
+  slug?: string;
+  mode?: DemoMode;
+  status?: DemoEventStatus;
+  starts_at?: string;
+  ends_at?: string | null;
+  location_name?: string | null;
+  location_address?: string | null;
+  meeting_url?: string | null;
+  capacity?: number;
+  description?: string | null;
+  public_notes?: string | null;
+  internal_notes?: string | null;
+};
+
+export type DemoRegistrationRow = {
+  id: string;
+  created_at: string;
+  demo_event_id: string;
+  lead_id: string;
+  attendance_status: AttendanceStatus;
+  notes: string | null;
+};
+
+export type DemoRegistrationInsert = {
+  id?: string;
+  created_at?: string;
+  demo_event_id: string;
+  lead_id: string;
+  attendance_status?: AttendanceStatus;
+  notes?: string | null;
+};
+
+export type DemoRegistrationUpdate = {
+  attendance_status?: AttendanceStatus;
+  notes?: string | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -112,6 +207,18 @@ export type Database = {
         Row: ContactLogRow;
         Insert: ContactLogInsert;
         Update: Partial<ContactLogInsert>;
+        Relationships: [];
+      };
+      demo_events: {
+        Row: DemoEventRow;
+        Insert: DemoEventInsert;
+        Update: DemoEventUpdate;
+        Relationships: [];
+      };
+      demo_registrations: {
+        Row: DemoRegistrationRow;
+        Insert: DemoRegistrationInsert;
+        Update: DemoRegistrationUpdate;
         Relationships: [];
       };
     };

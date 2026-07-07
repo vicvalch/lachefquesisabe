@@ -1,4 +1,5 @@
-import type { LeadRow, PrimaryInterest } from "@/types/database";
+import type { DemoEventRow, LeadRow, PrimaryInterest } from "@/types/database";
+import { formatDemoDate, formatDemoTime } from "@/lib/demos/format";
 
 const INTEREST_PHRASES: Record<PrimaryInterest, string> = {
   easy_recipes: "las recetas fáciles",
@@ -45,6 +46,87 @@ export const WHATSAPP_TEMPLATES: WhatsAppTemplate[] = [
       `Hola ${firstName(lead.name)}, ¡gracias por tu tiempo en la demostración! Espero que te haya gustado tanto como a mí compartirla. Quedo atenta a cualquier pregunta que tengas.`,
   },
 ];
+
+export type DemoTemplateId =
+  | "invitation"
+  | "confirmation"
+  | "reminder"
+  | "post_demo";
+
+interface DemoWhatsAppTemplate {
+  id: DemoTemplateId;
+  label: string;
+  template: string;
+}
+
+/**
+ * Plantillas específicas para el ciclo de vida de una demo. Los
+ * placeholders ({{name}}, {{demo_title}}, {{demo_date}}, {{demo_time}},
+ * {{demo_location}}) se rellenan con `renderDemoTemplate`.
+ */
+export const DEMO_WHATSAPP_TEMPLATES: DemoWhatsAppTemplate[] = [
+  {
+    id: "invitation",
+    label: "Invitación a demo",
+    template:
+      '¡Hola {{name}}! 👩‍🍳 Te escribo para invitarte a "{{demo_title}}" el {{demo_date}} a las {{demo_time}}{{demo_location}}. ¿Te gustaría reservar tu lugar?',
+  },
+  {
+    id: "confirmation",
+    label: "Confirmación de demo",
+    template:
+      '¡Hola {{name}}! Tu lugar en "{{demo_title}}" quedó confirmado para el {{demo_date}} a las {{demo_time}}{{demo_location}}. ¡Te espero! 🎉',
+  },
+  {
+    id: "reminder",
+    label: "Recordatorio",
+    template:
+      '¡Hola {{name}}! Te escribo para recordarte "{{demo_title}}" el {{demo_date}} a las {{demo_time}}{{demo_location}}. Cualquier cambio avísame por aquí. ¡Nos vemos pronto!',
+  },
+  {
+    id: "post_demo",
+    label: "Después de la demo",
+    template:
+      'Hola {{name}}, ¡gracias por acompañarme en "{{demo_title}}"! Espero que te haya encantado. Quedo atenta a cualquier pregunta que tengas.',
+  },
+];
+
+const DEMO_WHATSAPP_TEMPLATES_BY_ID = Object.fromEntries(
+  DEMO_WHATSAPP_TEMPLATES.map((template) => [template.id, template]),
+) as Record<DemoTemplateId, DemoWhatsAppTemplate>;
+
+function buildDemoLocationPhrase(demo: DemoEventRow): string {
+  if (demo.mode === "virtual") {
+    return demo.meeting_url ? ` (virtual: ${demo.meeting_url})` : " (virtual)";
+  }
+
+  const place = [demo.location_name, demo.location_address]
+    .filter((value): value is string => Boolean(value))
+    .join(", ");
+
+  return place ? ` en ${place}` : "";
+}
+
+/**
+ * Rellena una plantilla de demo con los datos del lead y la demo, usando
+ * Intl (locale es-CR) para fecha/hora sin dependencias externas. Nunca
+ * lanza por campos opcionales faltantes (ubicación, meeting_url): esa
+ * parte del mensaje simplemente se omite.
+ */
+export function renderDemoTemplate(
+  templateId: DemoTemplateId,
+  lead: LeadRow,
+  demo: DemoEventRow,
+): string {
+  const { template } = DEMO_WHATSAPP_TEMPLATES_BY_ID[templateId];
+
+  return template
+    .replaceAll("{{name}}", firstName(lead.name))
+    .replaceAll("{{demo_title}}", demo.title)
+    .replaceAll("{{demo_date}}", formatDemoDate(demo.starts_at))
+    .replaceAll("{{demo_time}}", formatDemoTime(demo.starts_at))
+    .replaceAll("{{demo_location}}", buildDemoLocationPhrase(demo));
+}
 
 const COSTA_RICA_COUNTRY_CODE = "506";
 const LOCAL_PHONE_LENGTH = 8;

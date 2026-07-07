@@ -5,6 +5,7 @@ import { LogoutButton } from "@/components/admin/LogoutButton";
 const NAV_LINKS = [
   { href: "/admin/dashboard", label: "Dashboard" },
   { href: "/admin/leads", label: "Leads" },
+  { href: "/admin/demos", label: "Demos" },
 ];
 
 export function Sidebar() {

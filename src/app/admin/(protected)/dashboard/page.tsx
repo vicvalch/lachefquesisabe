@@ -1,11 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { getLeadStats, listUpcomingFollowUps } from "@/lib/leads/queries";
 import {
+  getRegistrationCountsByDemoIds,
+  listUpcomingDemoEvents,
+} from "@/lib/demos/queries";
+import {
   PRIMARY_INTEREST_OPTIONS,
   LEAD_STATUS_LABELS,
 } from "@/lib/validations/lead";
 import { StatCard } from "@/components/admin/StatCard";
 import { UpcomingFollowUps } from "@/components/admin/UpcomingFollowUps";
+import { UpcomingDemos } from "@/components/admin/UpcomingDemos";
 
 export const metadata = {
   title: "Dashboard | Admin | La Chef que Sí Sabe",
@@ -13,10 +18,15 @@ export const metadata = {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const [stats, upcomingFollowUps] = await Promise.all([
+  const [stats, upcomingFollowUps, upcomingDemos] = await Promise.all([
     getLeadStats(supabase),
     listUpcomingFollowUps(supabase),
+    listUpcomingDemoEvents(supabase, 5),
   ]);
+  const demoCounts = await getRegistrationCountsByDemoIds(
+    supabase,
+    upcomingDemos.map((demo) => demo.id),
+  );
 
   return (
     <div className="flex flex-col gap-8">
@@ -48,6 +58,18 @@ export default async function DashboardPage() {
         </p>
         <div className="mt-4">
           <UpcomingFollowUps leads={upcomingFollowUps} />
+        </div>
+      </div>
+
+      <div>
+        <h2 className="font-display text-lg font-semibold text-ink">
+          Próximas demos
+        </h2>
+        <p className="mt-1 text-sm text-ink-soft">
+          Demostraciones programadas y su cupo disponible.
+        </p>
+        <div className="mt-4">
+          <UpcomingDemos demos={upcomingDemos} counts={demoCounts} />
         </div>
       </div>
 
