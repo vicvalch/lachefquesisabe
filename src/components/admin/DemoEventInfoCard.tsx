@@ -2,11 +2,23 @@ import { Card } from "@/components/ui/Card";
 import { DemoEventStatusBadge } from "@/components/ui/Badge";
 import {
   DEMO_EVENT_STATUS_LABELS,
-  DEMO_TYPE_LABELS,
+  DEMO_MODE_LABELS,
 } from "@/lib/validations/demo-event";
 import { formatDateTime } from "@/lib/utils";
 import type { DemoEventRow } from "@/types/database";
 import type { DemoRegistrationCounts } from "@/lib/demos/queries";
+
+function locationSummary(demo: DemoEventRow): string {
+  if (demo.mode === "virtual") {
+    return demo.meeting_url ? `Virtual — ${demo.meeting_url}` : "Virtual";
+  }
+
+  const place = [demo.location_name, demo.location_address]
+    .filter(Boolean)
+    .join(", ");
+
+  return place || "Sin definir";
+}
 
 export function DemoEventInfoCard({
   demo,
@@ -25,7 +37,7 @@ export function DemoEventInfoCard({
             {demo.title}
           </h2>
           <p className="text-sm text-ink-soft">
-            {formatDateTime(demo.scheduled_at)}
+            {formatDateTime(demo.starts_at)}
           </p>
         </div>
         <DemoEventStatusBadge
@@ -37,15 +49,15 @@ export function DemoEventInfoCard({
       <dl className="grid gap-4 sm:grid-cols-2">
         <div>
           <dt className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
-            Tipo
+            Modalidad
           </dt>
-          <dd className="text-sm text-ink">{DEMO_TYPE_LABELS[demo.demo_type]}</dd>
+          <dd className="text-sm text-ink">{DEMO_MODE_LABELS[demo.mode]}</dd>
         </div>
         <div>
           <dt className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
             Ubicación
           </dt>
-          <dd className="text-sm text-ink">{demo.location || "Sin definir"}</dd>
+          <dd className="text-sm text-ink">{locationSummary(demo)}</dd>
         </div>
         <div>
           <dt className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
@@ -73,6 +85,17 @@ export function DemoEventInfoCard({
           </dt>
           <p className="mt-1 whitespace-pre-wrap text-sm text-ink">
             {demo.description}
+          </p>
+        </div>
+      )}
+
+      {demo.public_notes && (
+        <div>
+          <dt className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+            Notas públicas
+          </dt>
+          <p className="mt-1 whitespace-pre-wrap text-sm text-ink">
+            {demo.public_notes}
           </p>
         </div>
       )}

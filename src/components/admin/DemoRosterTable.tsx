@@ -9,12 +9,8 @@ import {
   type UpdateAttendanceState,
 } from "@/lib/actions/demos";
 import { Select } from "@/components/ui/Select";
-import { buttonClasses } from "@/components/ui/Button";
+import { DemoTemplateActions } from "@/components/admin/DemoTemplateActions";
 import { ATTENDANCE_STATUS_OPTIONS } from "@/lib/validations/demo-registration";
-import {
-  buildDemoReminderMessage,
-  buildWhatsAppUrl,
-} from "@/lib/whatsapp/templates";
 import type { DemoEventRow } from "@/types/database";
 import type { DemoRegistrationWithLead } from "@/lib/demos/queries";
 
@@ -38,23 +34,20 @@ function DemoRosterRow({
   );
   const attendanceFormRef = useRef<HTMLFormElement>(null);
 
-  const whatsappLink = buildWhatsAppUrl(
-    registration.lead.phone,
-    buildDemoReminderMessage(registration.lead, demo),
-  );
-
   return (
     <tr className="hover:bg-cream-dark/30">
-      <td className="px-4 py-3 font-medium text-ink">
+      <td className="px-4 py-3 font-medium text-ink align-top">
         <Link
           href={`/admin/leads/${registration.lead.id}`}
           className="hover:text-brand-700 hover:underline"
         >
           {registration.lead.name}
         </Link>
-        <div className="text-xs text-ink-soft">{registration.lead.email}</div>
+        <div className="text-xs text-ink-soft">
+          {registration.lead.email ?? registration.lead.phone ?? "Sin contacto"}
+        </div>
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 align-top">
         <form
           ref={attendanceFormRef}
           action={attendanceAction}
@@ -82,36 +75,31 @@ function DemoRosterRow({
           )}
         </form>
       </td>
-      <td className="px-4 py-3 text-ink-soft">
+      <td className="px-4 py-3 text-ink-soft align-top">
         {registration.lead.phone ?? "Sin teléfono"}
       </td>
-      <td className="px-4 py-3">
-        <div className="flex flex-wrap items-center gap-3">
-          {whatsappLink && (
-            <a
-              href={whatsappLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonClasses("ghost", "px-3 py-1.5 text-xs")}
-            >
-              WhatsApp
-            </a>
-          )}
-          <form action={removeAction}>
-            <input type="hidden" name="demoEventId" value={demo.id} />
-            <input
-              type="hidden"
-              name="registrationId"
-              value={registration.id}
-            />
-            <button
-              type="submit"
-              className="text-xs font-semibold text-ink-soft hover:text-brand-700 hover:underline"
-            >
-              Quitar
-            </button>
-          </form>
-        </div>
+      <td className="px-4 py-3 align-top">
+        <DemoTemplateActions
+          lead={registration.lead}
+          demo={demo}
+          attendanceStatus={registration.attendance_status}
+        />
+      </td>
+      <td className="px-4 py-3 align-top">
+        <form action={removeAction}>
+          <input type="hidden" name="demoEventId" value={demo.id} />
+          <input
+            type="hidden"
+            name="registrationId"
+            value={registration.id}
+          />
+          <button
+            type="submit"
+            className="text-xs font-semibold text-ink-soft hover:text-brand-700 hover:underline"
+          >
+            Quitar
+          </button>
+        </form>
         {removeState.error && (
           <p className="mt-1 text-xs font-medium text-brand-700" role="alert">
             {removeState.error}
@@ -145,6 +133,7 @@ export function DemoRosterTable({
             <th className="px-4 py-3">Lead</th>
             <th className="px-4 py-3">Asistencia</th>
             <th className="px-4 py-3">Teléfono</th>
+            <th className="px-4 py-3">Plantillas WhatsApp</th>
             <th className="px-4 py-3">Acciones</th>
           </tr>
         </thead>

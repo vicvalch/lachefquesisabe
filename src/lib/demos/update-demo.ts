@@ -20,7 +20,7 @@ export async function updateDemoEventStatus(
     .from("demo_events")
     .update({
       status: input.status,
-      notes: input.notes || null,
+      internal_notes: input.internal_notes || null,
     })
     .eq("id", demoEventId);
 

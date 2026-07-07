@@ -28,9 +28,13 @@ export function LeadInfoCard({ lead }: { lead: LeadRow }) {
             Email
           </dt>
           <dd className="text-sm text-ink">
-            <a href={`mailto:${lead.email}`} className="hover:underline">
-              {lead.email}
-            </a>
+            {lead.email ? (
+              <a href={`mailto:${lead.email}`} className="hover:underline">
+                {lead.email}
+              </a>
+            ) : (
+              "No proporcionado"
+            )}
           </dd>
         </div>
         <div>

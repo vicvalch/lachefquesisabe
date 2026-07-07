@@ -7,11 +7,15 @@ import {
 const validInput = {
   title: "Demo de recetas rápidas",
   description: "",
-  demo_type: "in_person",
-  location: "Casa, Heredia",
-  scheduled_at: "2026-08-01T18:00",
+  public_notes: "",
+  mode: "in_person",
+  location_name: "Casa de la chef",
+  location_address: "Heredia, Costa Rica",
+  meeting_url: "",
+  starts_at: "2026-08-01T18:00",
+  ends_at: "",
   capacity: "8",
-  notes: "",
+  internal_notes: "",
 };
 
 describe("createDemoEventSchema", () => {
@@ -31,18 +35,26 @@ describe("createDemoEventSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rechaza un tipo de demo que no existe en el enum", () => {
+  it("rechaza una modalidad que no existe en el enum", () => {
     const result = createDemoEventSchema.safeParse({
       ...validInput,
-      demo_type: "hibrida",
+      mode: "hibrida",
     });
     expect(result.success).toBe(false);
   });
 
-  it("rechaza una fecha inválida", () => {
+  it("rechaza una fecha de inicio inválida", () => {
     const result = createDemoEventSchema.safeParse({
       ...validInput,
-      scheduled_at: "no-es-una-fecha",
+      starts_at: "no-es-una-fecha",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rechaza una fecha de fin inválida", () => {
+    const result = createDemoEventSchema.safeParse({
+      ...validInput,
+      ends_at: "no-es-una-fecha",
     });
     expect(result.success).toBe(false);
   });
@@ -63,11 +75,11 @@ describe("createDemoEventSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("acepta descripción, ubicación y notas vacías", () => {
+  it("acepta campos opcionales vacíos", () => {
     const result = createDemoEventSchema.safeParse({
       title: "Demo rápida",
-      demo_type: "virtual",
-      scheduled_at: "2026-08-01T18:00",
+      mode: "virtual",
+      starts_at: "2026-08-01T18:00",
       capacity: "5",
     });
     expect(result.success).toBe(true);
@@ -79,6 +91,11 @@ describe("updateDemoEventStatusSchema", () => {
     const result = updateDemoEventStatusSchema.safeParse({
       status: "completed",
     });
+    expect(result.success).toBe(true);
+  });
+
+  it("acepta el estado 'full'", () => {
+    const result = updateDemoEventStatusSchema.safeParse({ status: "full" });
     expect(result.success).toBe(true);
   });
 

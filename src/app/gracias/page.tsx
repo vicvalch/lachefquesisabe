@@ -8,7 +8,13 @@ export const metadata = {
   robots: { index: false },
 };
 
-export default function GraciasPage() {
+export default async function GraciasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ demo?: string }>;
+}) {
+  const { demo } = await searchParams;
+
   return (
     <>
       <Header />
@@ -18,12 +24,12 @@ export default function GraciasPage() {
             ¡Listo!
           </p>
           <h1 className="font-display text-3xl font-semibold text-ink sm:text-4xl">
-            Gracias por escribirnos
+            {demo ? "Gracias por registrarte" : "Gracias por escribirnos"}
           </h1>
           <p className="text-lg text-ink-soft">
-            Recibimos tus datos y te contactaremos muy pronto para contarte
-            más sobre recetas, demos de cocina y demostraciones de
-            Thermomix.
+            {demo
+              ? "¡Gracias! Ya recibimos tu registro para la demostración. Pronto te vamos a contactar para confirmar los detalles."
+              : "Recibimos tus datos y te contactaremos muy pronto para contarte más sobre recetas, demos de cocina y demostraciones de Thermomix."}
           </p>
           <Link href="/" className={buttonClasses("primary")}>
             Volver al inicio

@@ -51,7 +51,7 @@ export function DemoRegistrationForm({
           </option>
           {availableLeads.map((lead) => (
             <option key={lead.id} value={lead.id}>
-              {lead.name} · {lead.email}
+              {lead.name} · {lead.email ?? lead.phone ?? "sin contacto"}
             </option>
           ))}
         </Select>

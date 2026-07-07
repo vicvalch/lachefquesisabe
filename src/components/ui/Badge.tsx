@@ -36,7 +36,9 @@ export function StatusBadge({ status, label, className, ...props }: StatusBadgeP
 }
 
 const demoEventStatusClasses: Record<DemoEventStatus, string> = {
+  draft: "bg-ink/10 text-ink-soft",
   scheduled: "bg-brand-100 text-brand-700",
+  full: "bg-mustard-400/50 text-brand-700",
   completed: "bg-olive-500/25 text-olive-600",
   cancelled: "bg-ink/15 text-ink-soft",
 };

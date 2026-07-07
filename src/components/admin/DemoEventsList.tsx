@@ -1,9 +1,19 @@
 import Link from "next/link";
 import { DemoEventStatusBadge } from "@/components/ui/Badge";
-import { DEMO_EVENT_STATUS_LABELS, DEMO_TYPE_LABELS } from "@/lib/validations/demo-event";
+import {
+  DEMO_EVENT_STATUS_LABELS,
+  DEMO_MODE_LABELS,
+} from "@/lib/validations/demo-event";
 import { formatDateTime } from "@/lib/utils";
 import type { DemoEventRow } from "@/types/database";
 import type { DemoRegistrationCounts } from "@/lib/demos/queries";
+
+function locationSummary(demo: DemoEventRow): string | null {
+  if (demo.mode === "virtual") {
+    return "Virtual";
+  }
+  return [demo.location_name, demo.location_address].filter(Boolean).join(", ") || null;
+}
 
 export function DemoEventsList({
   demos,
@@ -28,7 +38,7 @@ export function DemoEventsList({
         <thead className="bg-cream-dark/50 text-left text-xs font-semibold uppercase tracking-wide text-ink-soft">
           <tr>
             <th className="px-4 py-3">Demo</th>
-            <th className="px-4 py-3">Tipo</th>
+            <th className="px-4 py-3">Modalidad</th>
             <th className="px-4 py-3">Fecha</th>
             <th className="px-4 py-3">Cupo</th>
             <th className="px-4 py-3">Estado</th>
@@ -37,6 +47,7 @@ export function DemoEventsList({
         <tbody className="divide-y divide-ink/10">
           {demos.map((demo) => {
             const demoCounts = counts[demo.id] ?? { active: 0, attended: 0, noShow: 0 };
+            const location = locationSummary(demo);
             return (
               <tr key={demo.id} className="hover:bg-cream-dark/30">
                 <td className="px-4 py-3 font-medium text-ink">
@@ -46,15 +57,15 @@ export function DemoEventsList({
                   >
                     {demo.title}
                   </Link>
-                  {demo.location && (
-                    <div className="text-xs text-ink-soft">{demo.location}</div>
+                  {location && (
+                    <div className="text-xs text-ink-soft">{location}</div>
                   )}
                 </td>
                 <td className="px-4 py-3 text-ink-soft">
-                  {DEMO_TYPE_LABELS[demo.demo_type]}
+                  {DEMO_MODE_LABELS[demo.mode]}
                 </td>
                 <td className="px-4 py-3 text-ink-soft">
-                  {formatDateTime(demo.scheduled_at)}
+                  {formatDateTime(demo.starts_at)}
                 </td>
                 <td className="px-4 py-3 text-ink-soft">
                   {demoCounts.active} / {demo.capacity}

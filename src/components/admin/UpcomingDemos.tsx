@@ -40,7 +40,7 @@ export function UpcomingDemos({
               <tr key={demo.id}>
                 <td className="px-4 py-3 font-medium text-ink">{demo.title}</td>
                 <td className="px-4 py-3 text-ink-soft">
-                  {formatDateTime(demo.scheduled_at)}
+                  {formatDateTime(demo.starts_at)}
                 </td>
                 <td className="px-4 py-3 text-ink-soft">
                   {demoCounts.active} / {demo.capacity}

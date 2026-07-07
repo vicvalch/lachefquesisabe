@@ -6,6 +6,7 @@ import type {
   DemoRegistrationRow,
   LeadRow,
 } from "@/types/database";
+import { PUBLIC_DEMO_EVENT_STATUSES } from "@/lib/validations/demo-event";
 
 export interface DemoRegistrationWithLead extends DemoRegistrationRow {
   lead: LeadRow;
@@ -38,8 +39,8 @@ export async function listUpcomingDemoEvents(
     .from("demo_events")
     .select("*")
     .eq("status", "scheduled")
-    .gte("scheduled_at", nowIso)
-    .order("scheduled_at", { ascending: true })
+    .gte("starts_at", nowIso)
+    .order("starts_at", { ascending: true })
     .limit(limit);
 
   if (error || !data) {
@@ -58,8 +59,8 @@ export async function listPastDemoEvents(
   const { data, error } = await supabase
     .from("demo_events")
     .select("*")
-    .or(`status.neq.scheduled,scheduled_at.lt.${nowIso}`)
-    .order("scheduled_at", { ascending: false })
+    .or(`status.neq.scheduled,starts_at.lt.${nowIso}`)
+    .order("starts_at", { ascending: false })
     .limit(limit);
 
   if (error || !data) {
@@ -77,6 +78,54 @@ export async function getDemoEventById(
     .from("demo_events")
     .select("*")
     .eq("id", id)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Demos visibles para el sitio público: status "scheduled" o "full" y
+ * fecha de inicio futura. Se apoya en RLS (la policy pública ya filtra
+ * exactamente por esto) y repite el filtro en la query para que el orden
+ * y el límite tengan sentido incluso si RLS cambiara.
+ */
+export async function listPublicUpcomingDemoEvents(
+  supabase: SupabaseClient<Database>,
+  limit = 20,
+): Promise<DemoEventRow[]> {
+  const nowIso = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("demo_events")
+    .select("*")
+    .in("status", PUBLIC_DEMO_EVENT_STATUSES)
+    .gte("starts_at", nowIso)
+    .order("starts_at", { ascending: true })
+    .limit(limit);
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data;
+}
+
+export async function getPublicDemoEventBySlug(
+  supabase: SupabaseClient<Database>,
+  slug: string,
+): Promise<DemoEventRow | null> {
+  const nowIso = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("demo_events")
+    .select("*")
+    .eq("slug", slug)
+    .in("status", PUBLIC_DEMO_EVENT_STATUSES)
+    .gte("starts_at", nowIso)
     .maybeSingle();
 
   if (error || !data) {

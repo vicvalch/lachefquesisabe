@@ -36,14 +36,14 @@ export function DemoEventStatusForm({ demo }: { demo: DemoEventRow }) {
 
       <Field
         label="Notas internas"
-        htmlFor="notes"
+        htmlFor="internal_notes"
         hint="No se comparten con los leads"
       >
         <Textarea
-          id="notes"
-          name="notes"
+          id="internal_notes"
+          name="internal_notes"
           rows={4}
-          defaultValue={demo.notes ?? ""}
+          defaultValue={demo.internal_notes ?? ""}
           placeholder="Ej: llevar ingredientes extra, faltó espacio para estacionar"
         />
       </Field>

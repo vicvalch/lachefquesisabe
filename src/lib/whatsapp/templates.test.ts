@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   WHATSAPP_TEMPLATES,
-  buildDemoReminderMessage,
   buildWhatsAppUrl,
   normalizePhoneForWhatsApp,
+  renderDemoTemplate,
 } from "./templates";
 import type { DemoEventRow, LeadRow } from "@/types/database";
 
@@ -36,33 +36,75 @@ describe("WHATSAPP_TEMPLATES", () => {
 const baseDemo: DemoEventRow = {
   id: "demo-1",
   created_at: new Date(0).toISOString(),
+  updated_at: new Date(0).toISOString(),
   created_by: null,
   title: "Demo de recetas rápidas",
+  slug: "demo-de-recetas-rapidas-abc123",
   description: null,
-  demo_type: "in_person",
-  location: "Casa, Heredia",
-  scheduled_at: "2026-08-01T18:00:00.000Z",
-  capacity: 8,
+  mode: "in_person",
   status: "scheduled",
-  notes: null,
+  starts_at: "2026-08-01T18:00:00.000Z",
+  ends_at: null,
+  location_name: "Casa de la chef",
+  location_address: "Heredia, Costa Rica",
+  meeting_url: null,
+  capacity: 8,
+  public_notes: null,
+  internal_notes: null,
 };
 
-describe("buildDemoReminderMessage", () => {
-  it("incluye el primer nombre, el título y la ubicación de la demo", () => {
-    const message = buildDemoReminderMessage(baseLead, baseDemo);
+describe("renderDemoTemplate", () => {
+  it("reemplaza {{name}} con el primer nombre del lead", () => {
+    const message = renderDemoTemplate("invitation", baseLead, baseDemo);
     expect(message).toContain("Ana");
     expect(message).not.toContain("Ana María Pérez");
-    expect(message).toContain("Demo de recetas rápidas");
-    expect(message).toContain("Casa, Heredia");
   });
 
-  it("no menciona ubicación cuando la demo no tiene una", () => {
-    const message = buildDemoReminderMessage(baseLead, {
-      ...baseDemo,
-      location: null,
-    });
-    expect(message).not.toContain(" en .");
+  it("reemplaza {{demo_title}}", () => {
+    const message = renderDemoTemplate("confirmation", baseLead, baseDemo);
     expect(message).toContain("Demo de recetas rápidas");
+  });
+
+  it("reemplaza {{demo_date}} y {{demo_time}} con formato es-CR", () => {
+    const message = renderDemoTemplate("reminder", baseLead, baseDemo);
+    expect(message).not.toContain("{{demo_date}}");
+    expect(message).not.toContain("{{demo_time}}");
+    expect(message).toMatch(/\d{2} de agosto de 2026/);
+  });
+
+  it("reemplaza {{demo_location}} con el lugar cuando es presencial", () => {
+    const message = renderDemoTemplate("invitation", baseLead, baseDemo);
+    expect(message).toContain("Casa de la chef, Heredia, Costa Rica");
+  });
+
+  it("reemplaza {{demo_location}} indicando modalidad virtual", () => {
+    const message = renderDemoTemplate("invitation", baseLead, {
+      ...baseDemo,
+      mode: "virtual",
+      location_name: null,
+      location_address: null,
+      meeting_url: "https://meet.example.com/demo",
+    });
+    expect(message).toContain("(virtual: https://meet.example.com/demo)");
+  });
+
+  it("maneja datos faltantes sin romper (sin ubicación ni meeting_url)", () => {
+    expect(() =>
+      renderDemoTemplate("post_demo", baseLead, {
+        ...baseDemo,
+        mode: "virtual",
+        location_name: null,
+        location_address: null,
+        meeting_url: null,
+      }),
+    ).not.toThrow();
+
+    const message = renderDemoTemplate("invitation", baseLead, {
+      ...baseDemo,
+      location_name: null,
+      location_address: null,
+    });
+    expect(message).not.toContain("{{demo_location}}");
   });
 });
 

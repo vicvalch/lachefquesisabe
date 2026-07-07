@@ -36,11 +36,15 @@ export async function createDemoEventAction(
   const parsed = createDemoEventSchema.safeParse({
     title: formData.get("title"),
     description: formData.get("description"),
-    demo_type: formData.get("demo_type"),
-    location: formData.get("location"),
-    scheduled_at: formData.get("scheduled_at"),
+    public_notes: formData.get("public_notes"),
+    mode: formData.get("mode"),
+    location_name: formData.get("location_name"),
+    location_address: formData.get("location_address"),
+    meeting_url: formData.get("meeting_url"),
+    starts_at: formData.get("starts_at"),
+    ends_at: formData.get("ends_at"),
     capacity: formData.get("capacity"),
-    notes: formData.get("notes"),
+    internal_notes: formData.get("internal_notes"),
   });
 
   if (!parsed.success) {
@@ -69,6 +73,7 @@ export async function createDemoEventAction(
   redirect(`/admin/demos/${result.id}`);
 }
 
+
 export interface UpdateDemoEventStatusState {
   error?: string;
 }
@@ -84,7 +89,7 @@ export async function updateDemoEventStatusAction(
 
   const parsed = updateDemoEventStatusSchema.safeParse({
     status: formData.get("status"),
-    notes: formData.get("notes"),
+    internal_notes: formData.get("internal_notes"),
   });
 
   if (!parsed.success) {
