@@ -51,6 +51,15 @@ export type ContentStatus = "draft" | "published" | "archived";
 
 export type ContentDifficulty = "easy" | "medium" | "hard";
 
+export type TaskStatus = "pending" | "completed" | "skipped" | "cancelled";
+
+export type TaskSource =
+  | "lead_created"
+  | "status_change"
+  | "demo_registration"
+  | "contact_log"
+  | "manual";
+
 export type LeadRow = {
   id: string;
   created_at: string;
@@ -63,7 +72,6 @@ export type LeadRow = {
   source: string;
   consent_contact: boolean;
   notes: string | null;
-  next_follow_up_at: string | null;
   last_contacted_at: string | null;
 };
 
@@ -79,7 +87,6 @@ export type LeadInsert = {
   source?: string;
   consent_contact: boolean;
   notes?: string | null;
-  next_follow_up_at?: string | null;
   last_contacted_at?: string | null;
 };
 
@@ -93,7 +100,6 @@ export type LeadUpdate = {
   source?: string;
   consent_contact?: boolean;
   notes?: string | null;
-  next_follow_up_at?: string | null;
   last_contacted_at?: string | null;
 };
 
@@ -301,6 +307,77 @@ export type ContentPostUpdate = {
   featured?: boolean;
 };
 
+export type MessageTemplateRow = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  key: string;
+  label: string;
+  body: string;
+  is_active: boolean;
+};
+
+export type MessageTemplateInsert = {
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+  key: string;
+  label: string;
+  body: string;
+  is_active?: boolean;
+};
+
+export type MessageTemplateUpdate = {
+  label?: string;
+  body?: string;
+  is_active?: boolean;
+};
+
+export type FollowUpTaskRow = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  lead_id: string;
+  demo_event_id: string | null;
+  contact_log_id: string | null;
+  created_by: string | null;
+  title: string;
+  message_template_key: string | null;
+  status: TaskStatus;
+  due_at: string;
+  source: TaskSource;
+  completed_at: string | null;
+  notes: string | null;
+};
+
+export type FollowUpTaskInsert = {
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+  lead_id: string;
+  demo_event_id?: string | null;
+  contact_log_id?: string | null;
+  created_by?: string | null;
+  title: string;
+  message_template_key?: string | null;
+  status?: TaskStatus;
+  due_at?: string;
+  source?: TaskSource;
+  completed_at?: string | null;
+  notes?: string | null;
+};
+
+export type FollowUpTaskUpdate = {
+  demo_event_id?: string | null;
+  contact_log_id?: string | null;
+  title?: string;
+  message_template_key?: string | null;
+  status?: TaskStatus;
+  due_at?: string;
+  completed_at?: string | null;
+  notes?: string | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -338,6 +415,18 @@ export type Database = {
         Row: ContentPostRow;
         Insert: ContentPostInsert;
         Update: ContentPostUpdate;
+        Relationships: [];
+      };
+      message_templates: {
+        Row: MessageTemplateRow;
+        Insert: MessageTemplateInsert;
+        Update: MessageTemplateUpdate;
+        Relationships: [];
+      };
+      follow_up_tasks: {
+        Row: FollowUpTaskRow;
+        Insert: FollowUpTaskInsert;
+        Update: FollowUpTaskUpdate;
         Relationships: [];
       };
     };

@@ -131,11 +131,13 @@ describe("registerLeadForDemo", () => {
 function buildAttendanceMock(options: {
   registrationUpdateResult?: { error: { message: string } | null };
   leadUpdateResult?: { error: { message: string } | null };
+  pendingTasksResult?: { data: { id: string }[] | null; error: { message: string } | null };
 }) {
   const registrationUpdateResult = options.registrationUpdateResult ?? {
     error: null,
   };
   const leadUpdateResult = options.leadUpdateResult ?? { error: null };
+  const pendingTasksResult = options.pendingTasksResult ?? { data: [], error: null };
 
   const regEq = vi.fn().mockResolvedValue(registrationUpdateResult);
   const regUpdate = vi.fn().mockReturnValue({ eq: regEq });
@@ -143,13 +145,28 @@ function buildAttendanceMock(options: {
   const leadEq = vi.fn().mockResolvedValue(leadUpdateResult);
   const leadUpdate = vi.fn().mockReturnValue({ eq: leadEq });
 
+  const limit = vi.fn().mockResolvedValue(pendingTasksResult);
+  const taskSelectEq2 = vi.fn().mockReturnValue({ limit });
+  const taskSelectEq1 = vi.fn().mockReturnValue({ eq: taskSelectEq2 });
+  const taskSelect = vi.fn().mockReturnValue({ eq: taskSelectEq1 });
+  const taskInsert = vi.fn().mockResolvedValue({ error: null });
+
   const from = vi.fn((table: string) => {
     if (table === "demo_registrations") return { update: regUpdate };
     if (table === "leads") return { update: leadUpdate };
+    if (table === "follow_up_tasks") return { select: taskSelect, insert: taskInsert };
     throw new Error(`Tabla inesperada: ${table}`);
   });
 
-  return { client: { from } as never, from, regUpdate, regEq, leadUpdate, leadEq };
+  return {
+    client: { from } as never,
+    from,
+    regUpdate,
+    regEq,
+    leadUpdate,
+    leadEq,
+    taskInsert,
+  };
 }
 
 const baseAttendanceInput: UpdateAttendanceInput = {
@@ -166,6 +183,7 @@ describe("updateAttendanceStatus", () => {
       client,
       "registration-1",
       "lead-1",
+      "demo-1",
       baseAttendanceInput,
     );
 
@@ -179,6 +197,22 @@ describe("updateAttendanceStatus", () => {
     expect(leadEq).toHaveBeenCalledWith("id", "lead-1");
   });
 
+  it("asegura una tarea de seguimiento atada a la demo tras sincronizar el status", async () => {
+    const { client, taskInsert } = buildAttendanceMock({});
+
+    await updateAttendanceStatus(
+      client,
+      "registration-1",
+      "lead-1",
+      "demo-1",
+      baseAttendanceInput,
+    );
+
+    expect(taskInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ lead_id: "lead-1", demo_event_id: "demo-1" }),
+    );
+  });
+
   it("sincroniza invited_to_demo, confirmed_demo y no_show según la asistencia", async () => {
     const cases: [UpdateAttendanceInput["attendance_status"], string][] = [
       ["registered", "invited_to_demo"],
@@ -189,7 +223,7 @@ describe("updateAttendanceStatus", () => {
     for (const [attendance_status, expectedStatus] of cases) {
       const { client, leadUpdate } = buildAttendanceMock({});
 
-      await updateAttendanceStatus(client, "registration-1", "lead-1", {
+      await updateAttendanceStatus(client, "registration-1", "lead-1", "demo-1", {
         attendance_status,
         notes: "",
       });
@@ -201,10 +235,13 @@ describe("updateAttendanceStatus", () => {
   it("no sincroniza leads.status cuando la asistencia se cancela", async () => {
     const { client, leadUpdate } = buildAttendanceMock({});
 
-    const result = await updateAttendanceStatus(client, "registration-1", "lead-1", {
-      attendance_status: "cancelled",
-      notes: "",
-    });
+    const result = await updateAttendanceStatus(
+      client,
+      "registration-1",
+      "lead-1",
+      "demo-1",
+      { attendance_status: "cancelled", notes: "" },
+    );
 
     expect(result).toEqual({ ok: true });
     expect(leadUpdate).not.toHaveBeenCalled();
@@ -219,6 +256,7 @@ describe("updateAttendanceStatus", () => {
       client,
       "registration-1",
       "lead-1",
+      "demo-1",
       baseAttendanceInput,
     );
 
@@ -235,6 +273,7 @@ describe("updateAttendanceStatus", () => {
       client,
       "registration-1",
       "lead-1",
+      "demo-1",
       baseAttendanceInput,
     );
 

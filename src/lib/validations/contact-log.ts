@@ -64,6 +64,7 @@ export const addContactLogSchema = z.object({
       (value) => !value || !Number.isNaN(new Date(value).getTime()),
       "La fecha de próximo seguimiento no es válida",
     ),
+  task_id: z.string().uuid().optional().or(z.literal("")),
 });
 
 export type AddContactLogInput = z.infer<typeof addContactLogSchema>;

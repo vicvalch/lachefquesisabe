@@ -19,11 +19,19 @@ publicar, despublicar/archivar) y publicado en `/recetas` (la ruta pública
 sigue hablando de "recetas" porque comercialmente es más claro, aunque el
 modelo interno soporta los tres tipos de contenido), con CTAs hacia las
 demos y la captura de leads, para que el sitio deje de ser solo landing +
-demos y empiece a atraer tráfico propio. No incluye automatizaciones,
-WhatsApp API, email automation, HubSpot, pagos, carrito, inventario,
-cursos pagos, membresías, subida avanzada de imágenes, IA generativa,
-comentarios públicos, ratings, favoritos, login de usuarios finales ni
-newsletter avanzada — eso queda para PRs posteriores.
+demos y empiece a atraer tráfico propio. Y el **PR 6**: la arquitectura
+real de seguimiento — tareas de seguimiento (`follow_up_tasks`) con ciclo
+de vida propio (pendiente/completada/saltada/cancelada), creadas
+automáticamente ante eventos importantes (lead nuevo, inscripción a una
+demo, cambio de estado del lead), y plantillas de mensaje editables desde
+el admin (`message_templates`), que reemplazan los arreglos estáticos de
+WhatsApp de PR 2/PR 3. El Centro de Seguimientos (`/admin/seguimientos`)
+ahora se basa en tareas reales, no solo en una fecha suelta en el lead. No
+incluye automatizaciones, WhatsApp API, email automation, HubSpot, pagos,
+carrito, inventario, cursos pagos, membresías, subida avanzada de
+imágenes, IA generativa, comentarios públicos, ratings, favoritos, login
+de usuarios finales, newsletter avanzada, cron jobs ni envío automático de
+mensajes — eso queda para PRs posteriores.
 
 ## Stack
 
@@ -60,6 +68,7 @@ src/
         content/                 # Listado, creación y edición de contenido
           [id]/                    # Editar y publicar/despublicar/archivar
           new/                     # Crear receta, tip o guía (borrador o publicado)
+        plantillas/              # Editar plantillas de mensaje (message_templates)
   components/
     landing/                  # Header, Hero, Features, LeadForm, Footer...
     demos/                    # DemoCard, PublicDemoRegistrationForm (sitio público)
@@ -67,7 +76,9 @@ src/
                                # (sitio público)
     admin/                    # Sidebar, StatCard, LeadsTable, LeadInfoCard,
                                # LeadUpdateForm, ContactLogForm/Timeline,
-                               # UpcomingFollowUps, WhatsAppTemplates,
+                               # UpcomingFollowUps, MessageTemplatePicker,
+                               # MessageTemplateForm, FollowUpTaskList/Card/Actions,
+                               # ScheduleFollowUpForm, LeadFollowUpTasks,
                                # DemoEventForm/InfoCard/StatusForm,
                                # DemoEventsList, DemoRegistrationForm,
                                # DemoRosterTable, DemoTemplateActions,
@@ -78,14 +89,20 @@ src/
   lib/
     supabase/                 # Clientes de Supabase (server + proxy/sesión)
     validations/               # Schemas Zod compartidos (incluye registro público a demo)
-    leads/                     # Capa de acceso a datos de leads (testeable)
+    leads/                     # Capa de acceso a datos de leads, tareas de
+                                # seguimiento (ciclo de vida + queries) y sugerencias
+                                # por estado (testeable)
     demos/                     # Capa de acceso a datos de demos e inscripciones,
                                 # registro público, slugs y formato de fecha/hora
     content/                   # Capa de acceso a datos de content_categories y
                                 # content_posts, slugs únicos y estadísticas para
                                 # el dashboard
-    whatsapp/                  # Plantillas (leads y demos) y utilidades de WhatsApp
-    actions/                   # Server actions (auth, leads, contact logs, demos, content)
+    message-templates/         # Queries, edición y renderizado de plantillas de
+                                # mensaje persistidas (reemplaza los arreglos
+                                # estáticos de whatsapp/templates.ts)
+    whatsapp/                  # Utilidades de wa.me (normalizar teléfono, armar link)
+    actions/                   # Server actions (auth, leads, contact logs, demos,
+                                # content, follow-up tasks, message templates)
   proxy.ts                     # Protege /admin (antes "middleware.ts")
 supabase/
   migrations/
@@ -97,6 +114,9 @@ supabase/
     0004_leads_email_optional.sql  # leads.email pasa a ser opcional
     0005_content_hub.sql       # content_categories y content_posts, políticas RLS
                                 # (admin + lectura pública acotada) y seed de categorías
+    0006_follow_up_tasks.sql   # follow_up_tasks y message_templates, triggers
+                                # security definer para creación automática de
+                                # tareas, y elimina leads.next_follow_up_at
 ```
 
 ## Configuración
@@ -218,6 +238,38 @@ posts de contenido), con visibilidad admin **y** pública:
     archivado o programado a futuro sin necesitar lógica extra en la app.
   - Nunca puede insertar, actualizar ni borrar ninguna de las dos tablas.
 
+**`0006_follow_up_tasks.sql`** (PR 6) agrega la arquitectura real de
+seguimiento y elimina el mecanismo liviano de PR 5:
+
+- `message_templates`: plantillas de mensaje editables (`key` estable,
+  `label`, `body` con placeholders `{{name}}`, `{{demo_title}}`,
+  `{{demo_date}}`, `{{demo_time}}`, `{{demo_location}}`, `is_active`). Se
+  siembran 6 plantillas iniciales (`primer_contacto`, `seguimiento`,
+  `invitacion_demo`, `recordatorio_demo`, `post_demo`, `reagendar`).
+- `follow_up_tasks`: la tarea de seguimiento real, con `lead_id`,
+  `demo_event_id` opcional, `message_template_key` opcional, `status`
+  (`pending`/`completed`/`skipped`/`cancelled`), `due_at`, `source`
+  (`lead_created`/`status_change`/`demo_registration`/`contact_log`/
+  `manual`), `completed_at`, `contact_log_id` (qué contacto la resolvió) y
+  `notes`.
+- El equipo **autenticado** puede leer/insertar/actualizar/borrar ambas
+  tablas sin restricciones. El rol **`anon`** no tiene ninguna policy
+  sobre ninguna de las dos: no lee ni escribe tareas ni plantillas
+  directamente.
+- Dos triggers `security definer` crean la tarea inicial automáticamente
+  ante eventos que sí puede disparar el rol `anon` (formularios públicos):
+  al insertar un lead con `status = 'new'` (tarea "Enviar primer
+  contacto") y al insertar una inscripción a demo con
+  `attendance_status` `registered`/`confirmed` (tarea "Confirmar
+  demo"/"Recordar demo", atada a esa demo). El resto de la creación
+  automática (cambio de estado del lead, ciclo de completar/saltar/
+  cancelar/reprogramar) vive en TypeScript (`lib/leads/
+  follow-up-task-lifecycle.ts`), no en triggers, porque esos caminos ya
+  corren siempre con sesión autenticada.
+- `leads.next_follow_up_at` se elimina: cada seguimiento programado es
+  ahora una fila propia en `follow_up_tasks`, no un campo suelto en el
+  lead.
+
 ### 3. Crear el usuario admin
 
 Por ahora no hay registro público de administradores. Crea el primer
@@ -253,24 +305,30 @@ Desde `/admin/leads` cada fila enlaza al detalle del lead
 (`/admin/leads/[id]`), pensado para el seguimiento manual día a día:
 
 - **Datos completos** del lead (contacto, interés primario, mensaje,
-  estado, último contacto y próximo seguimiento).
+  estado, último contacto y próxima tarea de seguimiento pendiente).
 - **Actualización del lead** (`LeadUpdateForm`): el admin puede cambiar
-  `status`, `notes` y `next_follow_up_at` desde un único formulario con
-  validación Zod y un allowlist explícito en la capa de datos
-  (`lib/leads/update-lead.ts`) — `email`, `phone`, `source`,
-  `consent_contact` y `created_at` nunca se aceptan desde este formulario.
+  `status` y `notes` desde un único formulario con validación Zod y un
+  allowlist explícito en la capa de datos (`lib/leads/update-lead.ts`) —
+  `email`, `phone`, `source`, `consent_contact` y `created_at` nunca se
+  aceptan desde este formulario. El próximo seguimiento ya no se edita
+  acá directamente: ver "Seguimientos y plantillas de mensaje (PR 6)".
 - **Registrar contacto** (`ContactLogForm`): guarda un registro en
   `contact_logs` (canal, dirección, resumen, resultado opcional y próximo
   seguimiento opcional). Al guardarlo, automáticamente:
   1. Inserta la fila en `contact_logs` con `created_by` tomado de la sesión
      autenticada (nunca del formulario).
   2. Actualiza `leads.last_contacted_at` a la hora actual.
-  3. Si se indicó `next_follow_up_at`, también actualiza ese campo en el
-     lead.
-  4. Revalida el detalle del lead, el listado y el dashboard.
-- **Plantillas de WhatsApp** personalizadas con el nombre del lead, listas
-  para copiar o abrir directo en WhatsApp (`wa.me`) si el lead tiene
-  teléfono. `lib/whatsapp/templates.ts` expone `normalizePhoneForWhatsApp`
+  3. Si viene `task_id` (se registró desde una tarea puntual), completa esa
+     tarea de seguimiento y la enlaza con este contact log.
+  4. Si se indicó `next_follow_up_at`, crea una nueva tarea de seguimiento
+     pendiente para esa fecha (ver PR 6).
+  5. Revalida el detalle del lead, el listado, el Centro de Seguimientos y
+     el dashboard.
+- **Plantillas de mensaje** (`MessageTemplatePicker`) personalizadas con
+  el nombre del lead (y, si aplica, los datos de una demo), listas para
+  copiar o abrir directo en WhatsApp (`wa.me`) si el lead tiene teléfono.
+  Las plantillas están persistidas y son editables desde `/admin/plantillas`
+  (ver PR 6). `lib/whatsapp/templates.ts` expone `normalizePhoneForWhatsApp`
   y `buildWhatsAppUrl`, que limpian espacios/guiones/paréntesis y agregan el
   código `506` a números ticos de 8 dígitos sin código de país. No hay
   integración con la API de WhatsApp: el envío sigue siendo manual.
@@ -281,8 +339,8 @@ por ejemplo `/admin/leads?status=contacted&interest=buy_thermomix`. Sigue
 limitado a 50 resultados ordenados por `created_at` descendente.
 
 `/admin/dashboard` incluye una sección **Seguimientos pendientes** con
-hasta 5 leads cuyo `next_follow_up_at` ya venció, ordenados por fecha de
-seguimiento ascendente.
+hasta 5 tareas de seguimiento vencidas o de hoy, ordenadas por `due_at`
+ascendente (ver PR 6).
 
 ## Demostraciones (PR 3)
 
@@ -336,11 +394,13 @@ su cupo ocupado (`inscripciones activas / capacity`) y su estado.
     guardado inmediato. Al cambiarlo, **se sincroniza `leads.status`**
     automáticamente (`invited_to_demo`, `confirmed_demo`, `attended` o
     `no_show`, según corresponda) para que el resto del CRM — dashboard,
-    filtros de leads, seguimientos pendientes — quede al día sin trabajo
-    manual extra. Cancelar una inscripción no cambia el status del lead.
-    Cada fila incluye plantillas de WhatsApp específicas de demo
-    (invitación, confirmación, recordatorio, después de la demo — ver
-    abajo) para copiar o abrir en `wa.me`, y un enlace al detalle del lead.
+    filtros de leads, Centro de Seguimientos — quede al día sin trabajo
+    manual extra. Ese cambio de status también asegura la tarea de
+    seguimiento correspondiente, atada a esta demo (ver PR 6). Cancelar una
+    inscripción no cambia el status del lead ni crea una tarea.
+    Cada fila incluye plantillas de mensaje específicas de demo
+    (invitación, recordatorio, después de la demo, reagendar — ver abajo)
+    para copiar o abrir en `wa.me`, y un enlace al detalle del lead.
   - **Estado de la demo**: un formulario aparte permite marcarla como
     borrador, programada, con cupo lleno, realizada o cancelada, y guardar
     notas internas, sin tocar título, modalidad, ubicación, fecha ni cupo
@@ -350,15 +410,18 @@ su cupo ocupado (`inscripciones activas / capacity`) y su estado.
 programadas y su cupo, para tener a la vista lo que viene sin entrar al
 listado completo.
 
-### Plantillas de WhatsApp para demos
+### Plantillas de mensaje para demos
 
-`lib/whatsapp/templates.ts` expone `DEMO_WHATSAPP_TEMPLATES` (invitación,
-confirmación, recordatorio, después de la demo) y `renderDemoTemplate(id,
-lead, demo)`, que rellena `{{name}}`, `{{demo_title}}`, `{{demo_date}}`,
+Las plantillas específicas de demo (`invitacion_demo`, `recordatorio_demo`,
+`post_demo`, `reagendar`) viven en `message_templates` (PR 6), igual que
+las genéricas. `lib/message-templates/render.ts` expone
+`buildTemplateContext(lead, demo)` y `renderMessageTemplate(body,
+context)`, que rellenan `{{name}}`, `{{demo_title}}`, `{{demo_date}}`,
 `{{demo_time}}` y `{{demo_location}}` (fecha/hora con `Intl` en locale
-`es-CR`, sin dependencias externas). No hay integración con la API de
-WhatsApp: `DemoTemplateActions` en el roster de `/admin/demos/[id]` solo
-copia el mensaje al portapapeles o abre un link `wa.me`.
+`es-CR`, sin dependencias externas) cuando hay una demo en contexto. No
+hay integración con la API de WhatsApp: `DemoTemplateActions` en el
+roster de `/admin/demos/[id]` solo copia el mensaje al portapapeles o
+abre un link `wa.me`.
 
 ## Content hub (PR 4)
 
@@ -444,6 +507,69 @@ sigue en borrador/archivado como dato secundario) y una sección
 actualización y un link para editar), ordenados por `updated_at`
 descendente.
 
+## Seguimientos y plantillas de mensaje (PR 6)
+
+PR 5 dejó una primera versión del Centro de Seguimientos basada
+únicamente en `leads.next_follow_up_at`: útil, pero una sola fecha por
+lead no alcanza para modelar "a quién escribirle, por qué y con qué
+mensaje" de forma confiable. PR 6 completa la arquitectura real:
+
+- **`follow_up_tasks`**: cada seguimiento programado es una fila propia,
+  con su propio ciclo de vida (`pending` → `completed` / `skipped` /
+  `cancelled`), en vez de un campo suelto en el lead. Un lead puede tener
+  varias tareas a lo largo del tiempo (historial completo, visible en su
+  detalle) y, en teoría, más de una pendiente a la vez (por ejemplo, una
+  del estado comercial y otra atada a una demo concreta).
+- **Creación automática ante eventos importantes**
+  (`lib/leads/follow-up-task-lifecycle.ts`, función
+  `ensureFollowUpTaskForStatus`, y los dos triggers `security definer` de
+  `0006_follow_up_tasks.sql`):
+  - Un lead nuevo (`status = 'new'`) recibe la tarea "Enviar primer
+    contacto".
+  - Inscribir un lead en una demo (desde el admin o desde el registro
+    público) recibe "Confirmar demo" o "Recordar demo", atada a esa demo.
+  - Cambiar el `status` de un lead (desde su detalle, o automáticamente al
+    sincronizar la asistencia a una demo) asegura que exista una tarea
+    pendiente acorde a ese estado — pero solo si el lead **no tiene ya**
+    una tarea pendiente, para no acumular duplicados cada vez que se
+    guarda el mismo estado.
+  - Si el estado pasa a uno final (`purchased` o `lost`), en vez de crear
+    una tarea nueva se **cancelan** las pendientes: ya no hay nada que
+    hacer.
+- **Ciclo de vida manual, desde el Centro de Seguimientos o el detalle del
+  lead** (`lib/actions/follow-up-tasks.ts`):
+  - **Completar**: se hace registrando un contact log con `task_id` (ver
+    `ContactLogForm`) — no hay un botón de "completar" suelto, completar
+    significa dejar registro de qué se conversó.
+  - **Saltar** (`skipFollowUpTaskAction`): la tarea no se resolvió, pero
+    tampoco amerita cancelarla del todo.
+  - **Cancelar** (`cancelFollowUpTaskAction`): ya no aplica.
+  - **Reprogramar** (`rescheduleFollowUpTaskAction`): mueve `due_at` sin
+    tocar el estado de la tarea.
+  - **Programar el siguiente seguimiento**: al registrar un contact log
+    con `next_follow_up_at`, se crea una tarea nueva para esa fecha (en
+    vez de escribir a un campo del lead); también se puede crear una tarea
+    manual libre desde el detalle del lead (`ScheduleFollowUpForm`,
+    `createFollowUpTaskAction`).
+- **`/admin/seguimientos`** (Centro de Seguimientos) agrupa las tareas
+  **pendientes** en vencidas/hoy/próximas según `due_at` (no según una
+  fecha en el lead), usando `groupFollowUpTasks` sobre `due_at` y
+  `listOpenFollowUpTasks` (con el lead y, si aplica, la demo ya
+  enlazados). Cada tarjeta de tarea muestra a quién escribirle y por qué,
+  una plantilla sugerida lista para copiar/abrir en WhatsApp, y las
+  acciones de arriba.
+- **`message_templates`**: reemplaza los arreglos estáticos
+  `WHATSAPP_TEMPLATES`/`DEMO_WHATSAPP_TEMPLATES` de PR 2/PR 3. Son
+  editables desde **`/admin/plantillas`** (nombre, mensaje con
+  placeholders, activa/inactiva) sin tocar código. `key` es el
+  identificador estable que usa el código (sugerencias por estado,
+  triggers de creación automática) y nunca se edita desde el admin.
+
+Todo sigue siendo manual: no hay envío automático de WhatsApp/email, no
+hay cron jobs, no hay integraciones externas. Lo único "automático" es
+que la tarea correcta ya está ahí, con el mensaje correcto sugerido,
+cuando la persona administradora entra a hacer el seguimiento.
+
 ## Notas de seguridad
 
 - El formulario de leads incluye un campo honeypot y validación server-side
@@ -510,6 +636,18 @@ descendente.
   `archived`).
 - `/admin/content` está protegido por los mismos dos niveles que el resto
   de `/admin/*` (proxy + verificación en el layout).
+- `follow_up_tasks` y `message_templates` (PR 6) son de uso exclusivo del
+  equipo autenticado: el rol `anon` no tiene **ninguna** policy sobre
+  ninguna de las dos tablas (`lib/leads/follow-up-tasks-rls-policies.test.ts`
+  lo deja como prueba de regresión). La única escritura que `anon` puede
+  disparar es indirecta, a través de los dos triggers `security definer`
+  de `0006_follow_up_tasks.sql` (creación de un lead, inscripción a una
+  demo), cada uno acotado a un insert puntual y bien definido — nunca le
+  dan a `anon` acceso directo de lectura o escritura sobre
+  `follow_up_tasks`.
+- Las nuevas server actions (`lib/actions/follow-up-tasks.ts`,
+  `lib/actions/message-templates.ts`) verifican la sesión con
+  `supabase.auth.getUser()` antes de escribir, igual que el resto.
 - El cuerpo de los posts (`content_posts.body`) se renderiza en
   `/recetas/[slug]` con `SafeTextRenderer`, que nunca usa
   `dangerouslySetInnerHTML` — cualquier HTML que un admin escriba por

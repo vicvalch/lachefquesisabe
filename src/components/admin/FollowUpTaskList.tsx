@@ -2,18 +2,21 @@ import {
   FollowUpTaskCard,
   type FollowUpUrgency,
 } from "@/components/admin/FollowUpTaskCard";
-import type { LeadRow } from "@/types/database";
+import type { FollowUpTaskWithLead } from "@/lib/leads/follow-up-tasks-queries";
+import type { MessageTemplateRow } from "@/types/database";
 
 export function FollowUpTaskList({
-  leads,
+  tasks,
   urgency,
+  templates,
   emptyMessage,
 }: {
-  leads: LeadRow[];
+  tasks: FollowUpTaskWithLead[];
   urgency: FollowUpUrgency;
+  templates: MessageTemplateRow[];
   emptyMessage: string;
 }) {
-  if (leads.length === 0) {
+  if (tasks.length === 0) {
     return (
       <p className="rounded-2xl border border-dashed border-ink/20 p-6 text-center text-sm text-ink-soft">
         {emptyMessage}
@@ -23,8 +26,13 @@ export function FollowUpTaskList({
 
   return (
     <div className="flex flex-col gap-4">
-      {leads.map((lead) => (
-        <FollowUpTaskCard key={lead.id} lead={lead} urgency={urgency} />
+      {tasks.map((task) => (
+        <FollowUpTaskCard
+          key={task.id}
+          task={task}
+          urgency={urgency}
+          templates={templates}
+        />
       ))}
     </div>
   );

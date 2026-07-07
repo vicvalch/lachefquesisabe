@@ -1,42 +1,43 @@
 import type { LeadStatus } from "@/types/database";
-import type { WhatsAppTemplateId } from "@/lib/whatsapp/templates";
 
 export interface FollowUpSuggestion {
   taskLabel: string;
-  templateId: WhatsAppTemplateId;
+  templateKey: string;
 }
 
 const DEFAULT_SUGGESTION: FollowUpSuggestion = {
   taskLabel: "Dar seguimiento",
-  templateId: "seguimiento",
+  templateKey: "seguimiento",
 };
 
 /**
- * Qué acción conviene hacer y qué plantilla de WhatsApp sugerir según el
- * estado comercial del lead. purchased/lost caen en DEFAULT_SUGGESTION: son
- * estados finales, si igual tienen next_follow_up_at es un caso raro que no
- * necesita una plantilla dedicada.
+ * Qué acción conviene hacer y qué plantilla de mensaje sugerir según el
+ * estado comercial del lead. Esta misma sugerencia es la que usa
+ * `ensureFollowUpTaskForStatus` para crear la tarea automática al cambiar
+ * el estado del lead. purchased/lost no aparecen acá: son estados finales,
+ * ensureFollowUpTaskForStatus cancela sus tareas pendientes en vez de
+ * sugerir una nueva.
  */
 const FOLLOW_UP_SUGGESTIONS: Partial<Record<LeadStatus, FollowUpSuggestion>> = {
-  new: { taskLabel: "Enviar primer contacto", templateId: "primer_contacto" },
-  contacted: { taskLabel: "Dar seguimiento", templateId: "seguimiento" },
-  interested: { taskLabel: "Dar seguimiento", templateId: "seguimiento" },
+  new: { taskLabel: "Enviar primer contacto", templateKey: "primer_contacto" },
+  contacted: { taskLabel: "Dar seguimiento", templateKey: "seguimiento" },
+  interested: { taskLabel: "Dar seguimiento", templateKey: "seguimiento" },
   invited_to_demo: {
     taskLabel: "Confirmar demo",
-    templateId: "recordatorio_demo",
+    templateKey: "invitacion_demo",
   },
   confirmed_demo: {
     taskLabel: "Recordar demo",
-    templateId: "recordatorio_demo",
+    templateKey: "recordatorio_demo",
   },
-  no_show: { taskLabel: "Reagendar", templateId: "seguimiento" },
+  no_show: { taskLabel: "Reagendar", templateKey: "reagendar" },
   attended: {
     taskLabel: "Seguimiento post-demo",
-    templateId: "post_demo",
+    templateKey: "post_demo",
   },
   post_demo_follow_up: {
     taskLabel: "Seguimiento post-demo",
-    templateId: "post_demo",
+    templateKey: "post_demo",
   },
 };
 

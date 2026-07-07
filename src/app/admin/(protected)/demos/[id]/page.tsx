@@ -7,6 +7,7 @@ import {
   listDemoRegistrations,
   listLeadsAvailableForDemo,
 } from "@/lib/demos/queries";
+import { listMessageTemplates } from "@/lib/message-templates/queries";
 import { DemoEventInfoCard } from "@/components/admin/DemoEventInfoCard";
 import { DemoEventStatusForm } from "@/components/admin/DemoEventStatusForm";
 import { DemoRegistrationForm } from "@/components/admin/DemoRegistrationForm";
@@ -30,10 +31,11 @@ export default async function DemoDetailPage({
     notFound();
   }
 
-  const [counts, registrations, availableLeads] = await Promise.all([
+  const [counts, registrations, availableLeads, templates] = await Promise.all([
     getDemoRegistrationCounts(supabase, demo.id),
     listDemoRegistrations(supabase, demo.id),
     listLeadsAvailableForDemo(supabase, demo.id),
+    listMessageTemplates(supabase),
   ]);
 
   return (
@@ -74,7 +76,11 @@ export default async function DemoDetailPage({
               quede al día.
             </p>
             <div className="mt-4">
-              <DemoRosterTable demo={demo} registrations={registrations} />
+              <DemoRosterTable
+                demo={demo}
+                registrations={registrations}
+                templates={templates}
+              />
             </div>
           </Card>
         </div>

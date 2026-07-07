@@ -1,44 +1,66 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { buttonClasses } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import {
-  DEMO_WHATSAPP_TEMPLATES,
-  buildWhatsAppUrl,
-  renderDemoTemplate,
-  type DemoTemplateId,
-} from "@/lib/whatsapp/templates";
-import type { AttendanceStatus, DemoEventRow, LeadRow } from "@/types/database";
+import { buildWhatsAppUrl } from "@/lib/whatsapp/templates";
+import { buildTemplateContext, renderMessageTemplate } from "@/lib/message-templates/render";
+import type {
+  AttendanceStatus,
+  DemoEventRow,
+  LeadRow,
+  MessageTemplateRow,
+} from "@/types/database";
 
-const DEFAULT_TEMPLATE_BY_ATTENDANCE: Record<AttendanceStatus, DemoTemplateId> = {
-  registered: "invitation",
-  confirmed: "confirmation",
+const DEFAULT_TEMPLATE_KEY_BY_ATTENDANCE: Record<AttendanceStatus, string> = {
+  registered: "invitacion_demo",
+  confirmed: "recordatorio_demo",
   attended: "post_demo",
-  no_show: "reminder",
-  cancelled: "invitation",
+  no_show: "reagendar",
+  cancelled: "invitacion_demo",
 };
 
+const DEMO_TEMPLATE_KEYS = [
+  "invitacion_demo",
+  "recordatorio_demo",
+  "post_demo",
+  "reagendar",
+];
+
 /**
- * Copiar/abrir plantillas de WhatsApp para una demo específica. No usa la
+ * Copiar/abrir plantillas de mensaje para una demo específica. No usa la
  * API de WhatsApp: solo copia al portapapeles o abre un link wa.me, igual
- * que WhatsAppTemplates en el detalle de lead.
+ * que MessageTemplatePicker en el detalle de lead.
  */
 export function DemoTemplateActions({
   lead,
   demo,
   attendanceStatus,
+  templates,
 }: {
   lead: LeadRow;
   demo: DemoEventRow;
   attendanceStatus: AttendanceStatus;
+  templates: MessageTemplateRow[];
 }) {
-  const [templateId, setTemplateId] = useState<DemoTemplateId>(
-    DEFAULT_TEMPLATE_BY_ATTENDANCE[attendanceStatus],
+  const demoTemplates = useMemo(
+    () =>
+      templates.filter(
+        (template) => template.is_active && DEMO_TEMPLATE_KEYS.includes(template.key),
+      ),
+    [templates],
+  );
+  const context = useMemo(() => buildTemplateContext(lead, demo), [lead, demo]);
+
+  const [templateKey, setTemplateKey] = useState(
+    DEFAULT_TEMPLATE_KEY_BY_ATTENDANCE[attendanceStatus],
   );
   const [copied, setCopied] = useState(false);
 
-  const message = renderDemoTemplate(templateId, lead, demo);
+  const activeTemplate = demoTemplates.find((t) => t.key === templateKey);
+  const message = activeTemplate
+    ? renderMessageTemplate(activeTemplate.body, context)
+    : "";
   const whatsappLink = buildWhatsAppUrl(lead.phone, message);
 
   async function handleCopy() {
@@ -51,20 +73,26 @@ export function DemoTemplateActions({
     }
   }
 
+  if (demoTemplates.length === 0) {
+    return (
+      <p className="text-xs text-ink-soft">Sin plantillas activas.</p>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-1.5">
-        {DEMO_WHATSAPP_TEMPLATES.map((template) => (
+        {demoTemplates.map((template) => (
           <button
-            key={template.id}
+            key={template.key}
             type="button"
             onClick={() => {
-              setTemplateId(template.id);
+              setTemplateKey(template.key);
               setCopied(false);
             }}
             className={cn(
               "rounded-full px-2.5 py-1 text-xs font-semibold transition-colors",
-              template.id === templateId
+              template.key === templateKey
                 ? "bg-brand-500 text-white"
                 : "bg-brand-50 text-ink-soft hover:bg-brand-100",
             )}

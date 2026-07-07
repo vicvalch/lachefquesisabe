@@ -11,7 +11,7 @@ import {
 import { Select } from "@/components/ui/Select";
 import { DemoTemplateActions } from "@/components/admin/DemoTemplateActions";
 import { ATTENDANCE_STATUS_OPTIONS } from "@/lib/validations/demo-registration";
-import type { DemoEventRow } from "@/types/database";
+import type { DemoEventRow, MessageTemplateRow } from "@/types/database";
 import type { DemoRegistrationWithLead } from "@/lib/demos/queries";
 
 const attendanceInitialState: UpdateAttendanceState = {};
@@ -20,9 +20,11 @@ const removeInitialState: RemoveRegistrationState = {};
 function DemoRosterRow({
   demo,
   registration,
+  templates,
 }: {
   demo: DemoEventRow;
   registration: DemoRegistrationWithLead;
+  templates: MessageTemplateRow[];
 }) {
   const [attendanceState, attendanceAction] = useActionState(
     updateAttendanceAction,
@@ -83,6 +85,7 @@ function DemoRosterRow({
           lead={registration.lead}
           demo={demo}
           attendanceStatus={registration.attendance_status}
+          templates={templates}
         />
       </td>
       <td className="px-4 py-3 align-top">
@@ -113,9 +116,11 @@ function DemoRosterRow({
 export function DemoRosterTable({
   demo,
   registrations,
+  templates,
 }: {
   demo: DemoEventRow;
   registrations: DemoRegistrationWithLead[];
+  templates: MessageTemplateRow[];
 }) {
   if (registrations.length === 0) {
     return (
@@ -143,6 +148,7 @@ export function DemoRosterTable({
               key={registration.id}
               demo={demo}
               registration={registration}
+              templates={templates}
             />
           ))}
         </tbody>

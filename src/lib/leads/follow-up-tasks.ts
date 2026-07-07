@@ -1,9 +1,9 @@
-import type { LeadRow } from "@/types/database";
+import type { FollowUpTaskRow } from "@/types/database";
 
-export interface FollowUpTaskGroups {
-  overdue: LeadRow[];
-  today: LeadRow[];
-  upcoming: LeadRow[];
+export interface FollowUpTaskGroups<T extends FollowUpTaskRow = FollowUpTaskRow> {
+  overdue: T[];
+  today: T[];
+  upcoming: T[];
 }
 
 function startOfDay(date: Date): Date {
@@ -19,32 +19,28 @@ function endOfDay(date: Date): Date {
 }
 
 /**
- * Agrupa leads con next_follow_up_at en vencidas, de hoy y próximas. Usa el
- * reloj local del proceso para "hoy", igual que el resto del admin (no hay
- * manejo explícito de zona horaria en la app).
+ * Agrupa tareas de seguimiento pendientes en vencidas, de hoy y próximas,
+ * según su due_at. Usa el reloj local del proceso para "hoy", igual que el
+ * resto del admin (no hay manejo explícito de zona horaria en la app).
  */
-export function groupFollowUpTasks(
-  leads: LeadRow[],
+export function groupFollowUpTasks<T extends FollowUpTaskRow>(
+  tasks: T[],
   now: Date = new Date(),
-): FollowUpTaskGroups {
+): FollowUpTaskGroups<T> {
   const todayStart = startOfDay(now);
   const todayEnd = endOfDay(now);
 
-  const groups: FollowUpTaskGroups = { overdue: [], today: [], upcoming: [] };
+  const groups: FollowUpTaskGroups<T> = { overdue: [], today: [], upcoming: [] };
 
-  for (const lead of leads) {
-    if (!lead.next_follow_up_at) {
-      continue;
-    }
-
-    const dueAt = new Date(lead.next_follow_up_at);
+  for (const task of tasks) {
+    const dueAt = new Date(task.due_at);
 
     if (dueAt < todayStart) {
-      groups.overdue.push(lead);
+      groups.overdue.push(task);
     } else if (dueAt <= todayEnd) {
-      groups.today.push(lead);
+      groups.today.push(task);
     } else {
-      groups.upcoming.push(lead);
+      groups.upcoming.push(task);
     }
   }
 

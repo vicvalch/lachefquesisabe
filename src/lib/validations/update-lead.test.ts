@@ -2,16 +2,15 @@ import { describe, expect, it } from "vitest";
 import { updateLeadSchema } from "./update-lead";
 
 describe("updateLeadSchema", () => {
-  it("acepta un estado válido sin notas ni seguimiento", () => {
+  it("acepta un estado válido sin notas", () => {
     const result = updateLeadSchema.safeParse({ status: "new" });
     expect(result.success).toBe(true);
   });
 
-  it("acepta notas y una fecha de próximo seguimiento", () => {
+  it("acepta notas", () => {
     const result = updateLeadSchema.safeParse({
       status: "contacted",
       notes: "Quiere agendar demo el sábado",
-      next_follow_up_at: "2026-08-01T10:00:00.000Z",
     });
     expect(result.success).toBe(true);
   });
@@ -21,10 +20,10 @@ describe("updateLeadSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rechaza una fecha de próximo seguimiento inválida", () => {
+  it("rechaza notas demasiado largas", () => {
     const result = updateLeadSchema.safeParse({
       status: "new",
-      next_follow_up_at: "no-es-una-fecha",
+      notes: "a".repeat(2001),
     });
     expect(result.success).toBe(false);
   });
@@ -37,6 +36,7 @@ describe("updateLeadSchema", () => {
       source: "otro",
       consent_contact: false,
       created_at: "2000-01-01T00:00:00.000Z",
+      next_follow_up_at: "2026-08-01T10:00:00.000Z",
     };
 
     const result = updateLeadSchema.safeParse(tampered);
@@ -48,6 +48,7 @@ describe("updateLeadSchema", () => {
       expect(result.data).not.toHaveProperty("source");
       expect(result.data).not.toHaveProperty("consent_contact");
       expect(result.data).not.toHaveProperty("created_at");
+      expect(result.data).not.toHaveProperty("next_follow_up_at");
     }
   });
 });

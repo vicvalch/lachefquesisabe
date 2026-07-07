@@ -17,7 +17,13 @@ import {
 
 const initialState: AddContactLogState = {};
 
-export function ContactLogForm({ leadId }: { leadId: string }) {
+export function ContactLogForm({
+  leadId,
+  taskId,
+}: {
+  leadId: string;
+  taskId?: string;
+}) {
   const [state, formAction, pending] = useActionState(
     addContactLogAction,
     initialState,
@@ -33,6 +39,7 @@ export function ContactLogForm({ leadId }: { leadId: string }) {
   return (
     <form ref={formRef} action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="leadId" value={leadId} />
+      <input type="hidden" name="task_id" value={taskId ?? ""} />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Canal" htmlFor="channel">

@@ -4,25 +4,41 @@ import { useMemo, useState } from "react";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import {
-  WHATSAPP_TEMPLATES,
-  buildWhatsAppUrl,
-  type WhatsAppTemplateId,
-} from "@/lib/whatsapp/templates";
-import type { LeadRow } from "@/types/database";
+import { buildWhatsAppUrl } from "@/lib/whatsapp/templates";
+import { buildTemplateContext, renderMessageTemplate } from "@/lib/message-templates/render";
+import type { DemoEventRow, LeadRow, MessageTemplateRow } from "@/types/database";
 
-export function WhatsAppTemplates({
+/**
+ * Selector de plantilla de mensaje + textarea editable + copiar/abrir en
+ * WhatsApp. Reemplaza el antiguo WhatsAppTemplates/DemoTemplateActions
+ * (arreglos estáticos) por plantillas persistidas en message_templates.
+ */
+export function MessageTemplatePicker({
+  templates,
   lead,
-  defaultTemplateId,
+  demo = null,
+  defaultTemplateKey,
 }: {
+  templates: MessageTemplateRow[];
   lead: LeadRow;
-  defaultTemplateId?: WhatsAppTemplateId;
+  demo?: DemoEventRow | null;
+  defaultTemplateKey?: string | null;
 }) {
+  const activeTemplates = useMemo(
+    () => templates.filter((template) => template.is_active),
+    [templates],
+  );
+  const context = useMemo(() => buildTemplateContext(lead, demo), [lead, demo]);
+
   const initialTemplate =
-    WHATSAPP_TEMPLATES.find((template) => template.id === defaultTemplateId) ??
-    WHATSAPP_TEMPLATES[0];
-  const [templateId, setTemplateId] = useState(initialTemplate.id);
-  const [message, setMessage] = useState(() => initialTemplate.build(lead));
+    activeTemplates.find((template) => template.key === defaultTemplateKey) ??
+    activeTemplates[0] ??
+    null;
+
+  const [templateKey, setTemplateKey] = useState(initialTemplate?.key ?? null);
+  const [message, setMessage] = useState(() =>
+    initialTemplate ? renderMessageTemplate(initialTemplate.body, context) : "",
+  );
   const [copied, setCopied] = useState(false);
 
   const whatsappLink = useMemo(
@@ -30,11 +46,11 @@ export function WhatsAppTemplates({
     [lead.phone, message],
   );
 
-  function selectTemplate(id: WhatsAppTemplateId) {
-    const template = WHATSAPP_TEMPLATES.find((t) => t.id === id);
+  function selectTemplate(key: string) {
+    const template = activeTemplates.find((t) => t.key === key);
     if (!template) return;
-    setTemplateId(id);
-    setMessage(template.build(lead));
+    setTemplateKey(key);
+    setMessage(renderMessageTemplate(template.body, context));
     setCopied(false);
   }
 
@@ -48,17 +64,29 @@ export function WhatsAppTemplates({
     }
   }
 
+  if (activeTemplates.length === 0) {
+    return (
+      <p className="text-xs text-ink-soft">
+        Todavía no hay plantillas de mensaje activas. Crea o activa una desde{" "}
+        <a href="/admin/plantillas" className="font-semibold underline">
+          /admin/plantillas
+        </a>
+        .
+      </p>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap gap-2">
-        {WHATSAPP_TEMPLATES.map((template) => (
+        {activeTemplates.map((template) => (
           <button
-            key={template.id}
+            key={template.key}
             type="button"
-            onClick={() => selectTemplate(template.id)}
+            onClick={() => selectTemplate(template.key)}
             className={cn(
               "rounded-full px-4 py-1.5 text-sm font-semibold transition-colors",
-              template.id === templateId
+              template.key === templateKey
                 ? "bg-brand-500 text-white"
                 : "bg-brand-50 text-ink-soft hover:bg-brand-100",
             )}
