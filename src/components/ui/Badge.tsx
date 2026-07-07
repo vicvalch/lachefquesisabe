@@ -2,9 +2,9 @@ import type { HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 import type {
   AttendanceStatus,
+  ContentStatus,
   DemoEventStatus,
   LeadStatus,
-  RecipeStatus,
 } from "@/types/database";
 
 const statusClasses: Record<LeadStatus, string> = {
@@ -106,27 +106,28 @@ export function AttendanceStatusBadge({
   );
 }
 
-const recipeStatusClasses: Record<RecipeStatus, string> = {
+const contentStatusClasses: Record<ContentStatus, string> = {
   draft: "bg-ink/10 text-ink-soft",
   published: "bg-olive-500/25 text-olive-600",
+  archived: "bg-ink/15 text-ink-soft",
 };
 
-interface RecipeStatusBadgeProps extends HTMLAttributes<HTMLSpanElement> {
-  status: RecipeStatus;
+interface ContentStatusBadgeProps extends HTMLAttributes<HTMLSpanElement> {
+  status: ContentStatus;
   label: string;
 }
 
-export function RecipeStatusBadge({
+export function ContentStatusBadge({
   status,
   label,
   className,
   ...props
-}: RecipeStatusBadgeProps) {
+}: ContentStatusBadgeProps) {
   return (
     <span
       className={cn(
         "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
-        recipeStatusClasses[status],
+        contentStatusClasses[status],
         className,
       )}
       {...props}

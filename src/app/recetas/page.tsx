@@ -1,16 +1,43 @@
 import { createClient } from "@/lib/supabase/server";
-import { listPublicRecipes } from "@/lib/recipes/queries";
+import { listPublicContentPosts } from "@/lib/content/queries";
+import { listCategories } from "@/lib/content/categories";
 import { Header } from "@/components/landing/Header";
 import { Footer } from "@/components/landing/Footer";
-import { RecipeCard } from "@/components/recipes/RecipeCard";
+import { ContentPostCard } from "@/components/content/ContentPostCard";
+import { ContentFilterBar } from "@/components/content/ContentFilterBar";
+import { CONTENT_TYPE_VALUES } from "@/lib/validations/content-post";
+import type { ContentType } from "@/types/database";
 
 export const metadata = {
-  title: "Recetas | La Chef que Sí Sabe",
+  title: "Recetas y tips | La Chef que Sí Sabe",
+  description:
+    "Recetas fáciles, tips de cocina y demostraciones para cocinar rico, fácil y sin complicarte.",
 };
 
-export default async function PublicRecipesPage() {
+function parseType(value: string | undefined): ContentType | undefined {
+  return value && (CONTENT_TYPE_VALUES as readonly string[]).includes(value)
+    ? (value as ContentType)
+    : undefined;
+}
+
+export default async function PublicRecipesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string; category?: string }>;
+}) {
+  const params = await searchParams;
+  const type = parseType(params.type);
+  const categorySlug = params.category || undefined;
+
   const supabase = await createClient();
-  const recipes = await listPublicRecipes(supabase);
+  const [posts, categories] = await Promise.all([
+    listPublicContentPosts(supabase, { type, categorySlug }),
+    listCategories(supabase),
+  ]);
+
+  const categoriesById = Object.fromEntries(
+    categories.map((category) => [category.id, category]),
+  );
 
   return (
     <>
@@ -27,16 +54,29 @@ export default async function PublicRecipesPage() {
             </p>
           </div>
 
+          <div className="mt-8">
+            <ContentFilterBar
+              categories={categories}
+              currentType={type}
+              currentCategorySlug={categorySlug}
+            />
+          </div>
+
           <div className="mt-12">
-            {recipes.length === 0 ? (
+            {posts.length === 0 ? (
               <p className="rounded-3xl border border-dashed border-ink/20 p-10 text-center text-ink-soft">
-                Muy pronto vamos a publicar las primeras recetas. Dejá tus
-                datos en la página principal y te avisamos.
+                Todavía no hay contenido para este filtro. Dejá tus datos en
+                la página principal y te avisamos cuando publiquemos algo
+                nuevo.
               </p>
             ) : (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {recipes.map((recipe) => (
-                  <RecipeCard key={recipe.id} recipe={recipe} />
+                {posts.map((post) => (
+                  <ContentPostCard
+                    key={post.id}
+                    post={post}
+                    category={post.category_id ? categoriesById[post.category_id] : null}
+                  />
                 ))}
               </div>
             )}

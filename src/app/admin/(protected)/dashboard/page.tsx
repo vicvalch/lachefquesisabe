@@ -4,7 +4,7 @@ import {
   getRegistrationCountsByDemoIds,
   listUpcomingDemoEvents,
 } from "@/lib/demos/queries";
-import { getRecipeStats } from "@/lib/recipes/queries";
+import { getContentStats, listRecentContentPosts } from "@/lib/content/queries";
 import {
   PRIMARY_INTEREST_OPTIONS,
   LEAD_STATUS_LABELS,
@@ -12,6 +12,7 @@ import {
 import { StatCard } from "@/components/admin/StatCard";
 import { UpcomingFollowUps } from "@/components/admin/UpcomingFollowUps";
 import { UpcomingDemos } from "@/components/admin/UpcomingDemos";
+import { RecentContentPosts } from "@/components/admin/RecentContentPosts";
 
 export const metadata = {
   title: "Dashboard | Admin | La Chef que Sí Sabe",
@@ -19,12 +20,13 @@ export const metadata = {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const [stats, upcomingFollowUps, upcomingDemos, recipeStats] =
+  const [stats, upcomingFollowUps, upcomingDemos, contentStats, recentContent] =
     await Promise.all([
       getLeadStats(supabase),
       listUpcomingFollowUps(supabase),
       listUpcomingDemoEvents(supabase, 5),
-      getRecipeStats(supabase),
+      getContentStats(supabase),
+      listRecentContentPosts(supabase, 5),
     ]);
   const demoCounts = await getRegistrationCountsByDemoIds(
     supabase,
@@ -51,9 +53,9 @@ export default async function DashboardPage() {
         />
         <StatCard label="Nuevos por contactar" value={stats.byStatus.new} />
         <StatCard
-          label="Recetas publicadas"
-          value={recipeStats.published}
-          hint={`${recipeStats.draft} en borrador`}
+          label="Contenido publicado"
+          value={contentStats.published}
+          hint={`${contentStats.draft} en borrador · ${contentStats.archived} archivado`}
         />
       </div>
 
@@ -78,6 +80,18 @@ export default async function DashboardPage() {
         </p>
         <div className="mt-4">
           <UpcomingDemos demos={upcomingDemos} counts={demoCounts} />
+        </div>
+      </div>
+
+      <div>
+        <h2 className="font-display text-lg font-semibold text-ink">
+          Contenido reciente
+        </h2>
+        <p className="mt-1 text-sm text-ink-soft">
+          Las últimas recetas, tips o guías creadas o editadas.
+        </p>
+        <div className="mt-4">
+          <RecentContentPosts posts={recentContent} />
         </div>
       </div>
 

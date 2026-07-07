@@ -6,7 +6,7 @@ const NAV_LINKS = [
   { href: "/admin/dashboard", label: "Dashboard" },
   { href: "/admin/leads", label: "Leads" },
   { href: "/admin/demos", label: "Demos" },
-  { href: "/admin/recetas", label: "Recetas" },
+  { href: "/admin/content", label: "Contenido" },
 ];
 
 export function Sidebar() {

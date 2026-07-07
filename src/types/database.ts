@@ -45,9 +45,11 @@ export type AttendanceStatus =
   | "no_show"
   | "cancelled";
 
-export type RecipeContentType = "recipe" | "tip";
+export type ContentType = "recipe" | "tip" | "guide";
 
-export type RecipeStatus = "draft" | "published";
+export type ContentStatus = "draft" | "published" | "archived";
+
+export type ContentDifficulty = "easy" | "medium" | "hard";
 
 export type LeadRow = {
   id: string;
@@ -198,57 +200,105 @@ export type DemoRegistrationUpdate = {
   notes?: string | null;
 };
 
-export type RecipeRow = {
+export type ContentCategoryRow = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
+
+export type ContentCategoryInsert = {
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  sort_order?: number;
+  is_active?: boolean;
+};
+
+export type ContentCategoryUpdate = {
+  name?: string;
+  slug?: string;
+  description?: string | null;
+  sort_order?: number;
+  is_active?: boolean;
+};
+
+export type ContentPostRow = {
   id: string;
   created_at: string;
   updated_at: string;
   published_at: string | null;
   created_by: string | null;
+  category_id: string | null;
   title: string;
   slug: string;
-  content_type: RecipeContentType;
-  status: RecipeStatus;
-  summary: string | null;
-  cover_image_url: string | null;
-  prep_minutes: number | null;
-  servings: number | null;
+  content_type: ContentType;
+  status: ContentStatus;
+  excerpt: string | null;
+  body: string;
   ingredients: string | null;
-  content: string;
-  cta_message: string | null;
+  instructions: string | null;
+  prep_time_minutes: number | null;
+  cook_time_minutes: number | null;
+  servings: number | null;
+  difficulty: ContentDifficulty | null;
+  image_url: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  featured: boolean;
 };
 
-export type RecipeInsert = {
+export type ContentPostInsert = {
   id?: string;
   created_at?: string;
   updated_at?: string;
   published_at?: string | null;
   created_by?: string | null;
+  category_id?: string | null;
   title: string;
   slug: string;
-  content_type?: RecipeContentType;
-  status?: RecipeStatus;
-  summary?: string | null;
-  cover_image_url?: string | null;
-  prep_minutes?: number | null;
-  servings?: number | null;
+  content_type?: ContentType;
+  status?: ContentStatus;
+  excerpt?: string | null;
+  body: string;
   ingredients?: string | null;
-  content: string;
-  cta_message?: string | null;
+  instructions?: string | null;
+  prep_time_minutes?: number | null;
+  cook_time_minutes?: number | null;
+  servings?: number | null;
+  difficulty?: ContentDifficulty | null;
+  image_url?: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  featured?: boolean;
 };
 
-export type RecipeUpdate = {
+export type ContentPostUpdate = {
   published_at?: string | null;
+  category_id?: string | null;
   title?: string;
   slug?: string;
-  content_type?: RecipeContentType;
-  status?: RecipeStatus;
-  summary?: string | null;
-  cover_image_url?: string | null;
-  prep_minutes?: number | null;
-  servings?: number | null;
+  content_type?: ContentType;
+  status?: ContentStatus;
+  excerpt?: string | null;
+  body?: string;
   ingredients?: string | null;
-  content?: string;
-  cta_message?: string | null;
+  instructions?: string | null;
+  prep_time_minutes?: number | null;
+  cook_time_minutes?: number | null;
+  servings?: number | null;
+  difficulty?: ContentDifficulty | null;
+  image_url?: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  featured?: boolean;
 };
 
 export type Database = {
@@ -278,10 +328,16 @@ export type Database = {
         Update: DemoRegistrationUpdate;
         Relationships: [];
       };
-      recipes: {
-        Row: RecipeRow;
-        Insert: RecipeInsert;
-        Update: RecipeUpdate;
+      content_categories: {
+        Row: ContentCategoryRow;
+        Insert: ContentCategoryInsert;
+        Update: ContentCategoryUpdate;
+        Relationships: [];
+      };
+      content_posts: {
+        Row: ContentPostRow;
+        Insert: ContentPostInsert;
+        Update: ContentPostUpdate;
         Relationships: [];
       };
     };

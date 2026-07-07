@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { buttonClasses } from "@/components/ui/Button";
 
-export function RecipeCtaSection({ message }: { message?: string | null }) {
+export function ContentCtaSection() {
   return (
     <div className="mt-10 rounded-3xl border border-ink/10 bg-white p-8 text-center shadow-sm">
       <h2 className="font-display text-xl font-semibold text-ink">
-        {message || "¿Te gustó? Sigamos cocinando juntas."}
+        ¿Te gustó? Sigamos cocinando juntas.
       </h2>
       <p className="mt-2 text-ink-soft">
         Reserva tu lugar en una demo en vivo o déjanos tus datos y te
