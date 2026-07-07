@@ -1,10 +1,12 @@
-import type { LeadInterest, LeadRow } from "@/types/database";
+import type { LeadRow, PrimaryInterest } from "@/types/database";
 
-const INTEREST_PHRASES: Record<LeadInterest, string> = {
-  recetas: "las recetas",
-  demo_cocina: "la demostración de cocina",
-  demo_thermomix: "la demostración de Thermomix",
-  otro: "lo que me contaste",
+const INTEREST_PHRASES: Record<PrimaryInterest, string> = {
+  easy_recipes: "las recetas fáciles",
+  save_time: "ahorrar tiempo en la cocina",
+  in_person_demo: "la demostración presencial",
+  virtual_demo: "la demostración virtual",
+  buy_thermomix: "comprar una Thermomix",
+  more_info: "lo que me contaste",
 };
 
 export interface WhatsAppTemplate {
@@ -22,13 +24,13 @@ export const WHATSAPP_TEMPLATES: WhatsAppTemplate[] = [
     id: "primer_contacto",
     label: "Primer contacto",
     build: (lead) =>
-      `¡Hola ${firstName(lead.name)}! 👩‍🍳 Soy la chef que sí sabe. Vi que dejaste tus datos porque te interesa ${INTEREST_PHRASES[lead.interest]}. ¿Tienes un minuto para contarme un poco más y ver cómo te puedo ayudar?`,
+      `¡Hola ${firstName(lead.name)}! 👩‍🍳 Soy la chef que sí sabe. Vi que dejaste tus datos porque te interesa ${INTEREST_PHRASES[lead.primary_interest]}. ¿Tienes un minuto para contarme un poco más y ver cómo te puedo ayudar?`,
   },
   {
     id: "seguimiento",
     label: "Seguimiento",
     build: (lead) =>
-      `Hola ${firstName(lead.name)} 🙋‍♀️ Te escribo para dar seguimiento a tu interés en ${INTEREST_PHRASES[lead.interest]}. ¿Sigues interesada/o? Cuéntame si tienes dudas, con gusto te ayudo.`,
+      `Hola ${firstName(lead.name)} 🙋‍♀️ Te escribo para dar seguimiento a tu interés en ${INTEREST_PHRASES[lead.primary_interest]}. ¿Sigues interesada/o? Cuéntame si tienes dudas, con gusto te ayudo.`,
   },
   {
     id: "recordatorio_demo",
@@ -44,20 +46,41 @@ export const WHATSAPP_TEMPLATES: WhatsAppTemplate[] = [
   },
 ];
 
-export function sanitizePhoneForWhatsApp(phone: string | null): string | null {
+const COSTA_RICA_COUNTRY_CODE = "506";
+const LOCAL_PHONE_LENGTH = 8;
+const MIN_VALID_PHONE_LENGTH = 8;
+
+/**
+ * Limpia espacios, guiones y paréntesis. Los números ticos de 8 dígitos
+ * (sin código de país) reciben el prefijo 506; los que ya traen código
+ * internacional (más de 8 dígitos) se preservan tal cual.
+ */
+export function normalizePhoneForWhatsApp(phone: string | null): string | null {
   if (!phone) {
     return null;
   }
 
   const digits = phone.replace(/[^0-9]/g, "");
-  return digits.length >= 8 ? digits : null;
-}
 
-export function buildWhatsAppLink(phone: string | null, message: string): string | null {
-  const sanitized = sanitizePhoneForWhatsApp(phone);
-  if (!sanitized) {
+  if (digits.length < MIN_VALID_PHONE_LENGTH) {
     return null;
   }
 
-  return `https://wa.me/${sanitized}?text=${encodeURIComponent(message)}`;
+  if (digits.length === LOCAL_PHONE_LENGTH) {
+    return `${COSTA_RICA_COUNTRY_CODE}${digits}`;
+  }
+
+  return digits;
+}
+
+export function buildWhatsAppUrl(
+  phone: string | null,
+  message: string,
+): string | null {
+  const normalized = normalizePhoneForWhatsApp(phone);
+  if (!normalized) {
+    return null;
+  }
+
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
 }

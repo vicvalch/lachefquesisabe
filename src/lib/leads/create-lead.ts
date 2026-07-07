@@ -18,7 +18,7 @@ export async function createLead(
     name: input.name,
     email: input.email,
     phone: input.phone || null,
-    interest: input.interest,
+    primary_interest: input.primary_interest,
     message: input.message || null,
     consent_contact: input.consent_contact,
     source: "landing",

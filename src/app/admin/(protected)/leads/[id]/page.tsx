@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getLeadById, listLeadActivities } from "@/lib/leads/queries";
+import { getLeadById, listContactLogs } from "@/lib/leads/queries";
 import { LeadInfoCard } from "@/components/admin/LeadInfoCard";
-import { StatusSelect } from "@/components/admin/StatusSelect";
-import { ActivityForm } from "@/components/admin/ActivityForm";
-import { ActivityTimeline } from "@/components/admin/ActivityTimeline";
+import { LeadUpdateForm } from "@/components/admin/LeadUpdateForm";
+import { ContactLogForm } from "@/components/admin/ContactLogForm";
+import { ContactLogTimeline } from "@/components/admin/ContactLogTimeline";
 import { WhatsAppTemplates } from "@/components/admin/WhatsAppTemplates";
 import { Card } from "@/components/ui/Card";
 
@@ -26,7 +26,7 @@ export default async function LeadDetailPage({
     notFound();
   }
 
-  const activities = await listLeadActivities(supabase, lead.id);
+  const contactLogs = await listContactLogs(supabase, lead.id);
 
   return (
     <div className="flex flex-col gap-6">
@@ -56,23 +56,24 @@ export default async function LeadDetailPage({
 
           <Card>
             <h2 className="font-display text-lg font-semibold text-ink">
-              Notas y contactos
+              Registrar contacto
             </h2>
             <p className="mt-1 text-sm text-ink-soft">
-              Registra cada seguimiento para no perder el hilo con este lead.
+              Cada contacto queda registrado y actualiza automáticamente el
+              último contacto y el próximo seguimiento del lead.
             </p>
             <div className="mt-4">
-              <ActivityForm leadId={lead.id} />
+              <ContactLogForm leadId={lead.id} />
             </div>
             <div className="mt-6">
-              <ActivityTimeline activities={activities} />
+              <ContactLogTimeline logs={contactLogs} />
             </div>
           </Card>
         </div>
 
         <div className="flex flex-col gap-6">
           <Card>
-            <StatusSelect leadId={lead.id} status={lead.status} />
+            <LeadUpdateForm lead={lead} />
           </Card>
         </div>
       </div>

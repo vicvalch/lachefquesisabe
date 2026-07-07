@@ -1,24 +1,49 @@
 import { z } from "zod";
-import type { LeadInterest, LeadStatus } from "@/types/database";
+import type { LeadStatus, PrimaryInterest } from "@/types/database";
 
-export const LEAD_INTEREST_OPTIONS: { value: LeadInterest; label: string }[] = [
-  { value: "recetas", label: "Recetas" },
-  { value: "demo_cocina", label: "Demo de cocina" },
-  { value: "demo_thermomix", label: "Demo de Thermomix" },
-  { value: "otro", label: "Otro" },
+export const PRIMARY_INTEREST_OPTIONS: { value: PrimaryInterest; label: string }[] =
+  [
+    { value: "easy_recipes", label: "Recetas fáciles" },
+    { value: "save_time", label: "Ahorrar tiempo" },
+    { value: "in_person_demo", label: "Demo presencial" },
+    { value: "virtual_demo", label: "Demo virtual" },
+    { value: "buy_thermomix", label: "Comprar una Thermomix" },
+    { value: "more_info", label: "Más información" },
+  ];
+
+export const PRIMARY_INTEREST_LABELS: Record<PrimaryInterest, string> =
+  Object.fromEntries(
+    PRIMARY_INTEREST_OPTIONS.map((option) => [option.value, option.label]),
+  ) as Record<PrimaryInterest, string>;
+
+export const LEAD_STATUS_OPTIONS: { value: LeadStatus; label: string }[] = [
+  { value: "new", label: "Nuevo" },
+  { value: "contacted", label: "Contactado" },
+  { value: "interested", label: "Interesado" },
+  { value: "invited_to_demo", label: "Invitado a demo" },
+  { value: "confirmed_demo", label: "Confirmó demo" },
+  { value: "attended", label: "Asistió" },
+  { value: "no_show", label: "No asistió" },
+  { value: "post_demo_follow_up", label: "Seguimiento post-demo" },
+  { value: "purchased", label: "Compró" },
+  { value: "lost", label: "Perdido" },
 ];
 
-export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
-  nuevo: "Nuevo",
-  contactado: "Contactado",
-  convertido: "Convertido",
-  descartado: "Descartado",
-};
+export const LEAD_STATUS_LABELS: Record<LeadStatus, string> =
+  Object.fromEntries(
+    LEAD_STATUS_OPTIONS.map((option) => [option.value, option.label]),
+  ) as Record<LeadStatus, string>;
 
-const leadInterestValues = LEAD_INTEREST_OPTIONS.map((o) => o.value) as [
-  LeadInterest,
-  ...LeadInterest[],
+const primaryInterestValues = PRIMARY_INTEREST_OPTIONS.map(
+  (option) => option.value,
+) as [PrimaryInterest, ...PrimaryInterest[]];
+
+const leadStatusValues = LEAD_STATUS_OPTIONS.map((option) => option.value) as [
+  LeadStatus,
+  ...LeadStatus[],
 ];
+
+export const LEAD_STATUS_VALUES = leadStatusValues;
 
 export const leadFormSchema = z.object({
   name: z
@@ -37,7 +62,7 @@ export const leadFormSchema = z.object({
     .max(20, "El teléfono es demasiado largo")
     .optional()
     .or(z.literal("")),
-  interest: z.enum(leadInterestValues, {
+  primary_interest: z.enum(primaryInterestValues, {
     message: "Selecciona qué te interesa",
   }),
   message: z

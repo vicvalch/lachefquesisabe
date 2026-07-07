@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { WHATSAPP_TEMPLATES, buildWhatsAppLink } from "@/lib/whatsapp/templates";
+import { WHATSAPP_TEMPLATES, buildWhatsAppUrl } from "@/lib/whatsapp/templates";
 import type { LeadRow } from "@/types/database";
 
 export function WhatsAppTemplates({ lead }: { lead: LeadRow }) {
@@ -13,7 +13,7 @@ export function WhatsAppTemplates({ lead }: { lead: LeadRow }) {
   const [copied, setCopied] = useState(false);
 
   const whatsappLink = useMemo(
-    () => buildWhatsAppLink(lead.phone, message),
+    () => buildWhatsAppUrl(lead.phone, message),
     [lead.phone, message],
   );
 

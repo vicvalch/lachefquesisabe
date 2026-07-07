@@ -1,22 +1,25 @@
 import { describe, expect, it } from "vitest";
 import {
   WHATSAPP_TEMPLATES,
-  buildWhatsAppLink,
-  sanitizePhoneForWhatsApp,
+  buildWhatsAppUrl,
+  normalizePhoneForWhatsApp,
 } from "./templates";
 import type { LeadRow } from "@/types/database";
 
 const baseLead: LeadRow = {
   id: "lead-1",
-  created_at: new Date().toISOString(),
+  created_at: new Date(0).toISOString(),
   name: "Ana María Pérez",
   email: "ana@example.com",
   phone: "+52 55 1234 5678",
-  interest: "demo_thermomix",
+  primary_interest: "buy_thermomix",
   message: null,
-  status: "nuevo",
+  status: "new",
   source: "landing",
   consent_contact: true,
+  notes: null,
+  next_follow_up_at: null,
+  last_contacted_at: null,
 };
 
 describe("WHATSAPP_TEMPLATES", () => {
@@ -29,27 +32,44 @@ describe("WHATSAPP_TEMPLATES", () => {
   });
 });
 
-describe("sanitizePhoneForWhatsApp", () => {
-  it("elimina caracteres no numéricos", () => {
-    expect(sanitizePhoneForWhatsApp("+52 55 1234 5678")).toBe("525512345678");
+describe("normalizePhoneForWhatsApp", () => {
+  it("elimina espacios, guiones y paréntesis", () => {
+    expect(normalizePhoneForWhatsApp("+52 (55) 1234-5678")).toBe(
+      "525512345678",
+    );
+  });
+
+  it("agrega 506 a un número tico de 8 dígitos sin código de país", () => {
+    expect(normalizePhoneForWhatsApp("8888-8888")).toBe("50688888888");
+  });
+
+  it("preserva un número que ya trae código internacional", () => {
+    expect(normalizePhoneForWhatsApp("+52 55 1234 5678")).toBe(
+      "525512345678",
+    );
   });
 
   it("devuelve null si no hay teléfono", () => {
-    expect(sanitizePhoneForWhatsApp(null)).toBeNull();
+    expect(normalizePhoneForWhatsApp(null)).toBeNull();
   });
 
   it("devuelve null si el teléfono es demasiado corto", () => {
-    expect(sanitizePhoneForWhatsApp("12345")).toBeNull();
+    expect(normalizePhoneForWhatsApp("12345")).toBeNull();
   });
 });
 
-describe("buildWhatsAppLink", () => {
+describe("buildWhatsAppUrl", () => {
   it("construye un link de wa.me con el mensaje codificado", () => {
-    const link = buildWhatsAppLink("+52 55 1234 5678", "Hola!");
-    expect(link).toBe("https://wa.me/525512345678?text=Hola!");
+    const url = buildWhatsAppUrl("+52 55 1234 5678", "Hola!");
+    expect(url).toBe("https://wa.me/525512345678?text=Hola!");
+  });
+
+  it("agrega el código 506 para números ticos de 8 dígitos", () => {
+    const url = buildWhatsAppUrl("8888 8888", "Hola!");
+    expect(url).toBe("https://wa.me/50688888888?text=Hola!");
   });
 
   it("devuelve null cuando el teléfono no es válido", () => {
-    expect(buildWhatsAppLink(null, "Hola!")).toBeNull();
+    expect(buildWhatsAppUrl(null, "Hola!")).toBeNull();
   });
 });

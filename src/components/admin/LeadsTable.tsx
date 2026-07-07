@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/Badge";
-import { LEAD_STATUS_LABELS } from "@/lib/validations/lead";
+import { LEAD_STATUS_LABELS, PRIMARY_INTEREST_LABELS } from "@/lib/validations/lead";
 import { formatDateTime } from "@/lib/utils";
 import type { LeadRow } from "@/types/database";
 
@@ -41,7 +41,9 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
                 <div>{lead.email}</div>
                 {lead.phone && <div>{lead.phone}</div>}
               </td>
-              <td className="px-4 py-3 text-ink-soft">{lead.interest}</td>
+              <td className="px-4 py-3 text-ink-soft">
+                {PRIMARY_INTEREST_LABELS[lead.primary_interest]}
+              </td>
               <td className="px-4 py-3">
                 <StatusBadge
                   status={lead.status}

@@ -1,14 +1,33 @@
-export type LeadInterest =
-  | "recetas"
-  | "demo_cocina"
-  | "demo_thermomix"
-  | "otro";
+export type PrimaryInterest =
+  | "easy_recipes"
+  | "save_time"
+  | "in_person_demo"
+  | "virtual_demo"
+  | "buy_thermomix"
+  | "more_info";
 
-export type LeadStatus = "nuevo" | "contactado" | "convertido" | "descartado";
+export type LeadStatus =
+  | "new"
+  | "contacted"
+  | "interested"
+  | "invited_to_demo"
+  | "confirmed_demo"
+  | "attended"
+  | "no_show"
+  | "post_demo_follow_up"
+  | "purchased"
+  | "lost";
 
-export type LeadActivityType = "note" | "contact";
+export type ContactChannel =
+  | "whatsapp"
+  | "phone"
+  | "email"
+  | "instagram"
+  | "tiktok"
+  | "in_person"
+  | "other";
 
-export type ContactChannel = "whatsapp" | "llamada" | "email" | "otro";
+export type ContactDirection = "outbound" | "inbound";
 
 export type LeadRow = {
   id: string;
@@ -16,11 +35,14 @@ export type LeadRow = {
   name: string;
   email: string;
   phone: string | null;
-  interest: LeadInterest;
+  primary_interest: PrimaryInterest;
   message: string | null;
   status: LeadStatus;
   source: string;
   consent_contact: boolean;
+  notes: string | null;
+  next_follow_up_at: string | null;
+  last_contacted_at: string | null;
 };
 
 export type LeadInsert = {
@@ -29,42 +51,52 @@ export type LeadInsert = {
   name: string;
   email: string;
   phone?: string | null;
-  interest: LeadInterest;
+  primary_interest: PrimaryInterest;
   message?: string | null;
   status?: LeadStatus;
   source?: string;
   consent_contact: boolean;
+  notes?: string | null;
+  next_follow_up_at?: string | null;
+  last_contacted_at?: string | null;
 };
 
 export type LeadUpdate = {
   name?: string;
   email?: string;
   phone?: string | null;
-  interest?: LeadInterest;
+  primary_interest?: PrimaryInterest;
   message?: string | null;
   status?: LeadStatus;
   source?: string;
   consent_contact?: boolean;
+  notes?: string | null;
+  next_follow_up_at?: string | null;
+  last_contacted_at?: string | null;
 };
 
-export type LeadActivityRow = {
+export type ContactLogRow = {
   id: string;
   created_at: string;
   lead_id: string;
   created_by: string | null;
-  type: LeadActivityType;
-  channel: ContactChannel | null;
-  content: string;
+  channel: ContactChannel;
+  direction: ContactDirection;
+  summary: string;
+  outcome: string | null;
+  next_follow_up_at: string | null;
 };
 
-export type LeadActivityInsert = {
+export type ContactLogInsert = {
   id?: string;
   created_at?: string;
   lead_id: string;
   created_by?: string | null;
-  type: LeadActivityType;
-  channel?: ContactChannel | null;
-  content: string;
+  channel: ContactChannel;
+  direction: ContactDirection;
+  summary: string;
+  outcome?: string | null;
+  next_follow_up_at?: string | null;
 };
 
 export type Database = {
@@ -76,10 +108,10 @@ export type Database = {
         Update: LeadUpdate;
         Relationships: [];
       };
-      lead_activities: {
-        Row: LeadActivityRow;
-        Insert: LeadActivityInsert;
-        Update: Partial<LeadActivityInsert>;
+      contact_logs: {
+        Row: ContactLogRow;
+        Insert: ContactLogInsert;
+        Update: Partial<ContactLogInsert>;
         Relationships: [];
       };
     };

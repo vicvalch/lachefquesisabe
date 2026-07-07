@@ -6,7 +6,7 @@ const validInput: CreateLeadInput = {
   name: "Ana Pérez",
   email: "ana@example.com",
   phone: "",
-  interest: "recetas",
+  primary_interest: "easy_recipes",
   message: "",
   consent_contact: true,
 };
@@ -30,7 +30,7 @@ describe("createLead", () => {
         name: "Ana Pérez",
         email: "ana@example.com",
         phone: null,
-        interest: "recetas",
+        primary_interest: "easy_recipes",
         message: null,
         consent_contact: true,
         source: "landing",
@@ -50,7 +50,7 @@ describe("createLead", () => {
     const { client, insert } = buildSupabaseMock({ error: null });
     const tampered = {
       ...validInput,
-      status: "convertido",
+      status: "purchased",
       notes: "no debería llegar a la base",
     } as CreateLeadInput;
 
