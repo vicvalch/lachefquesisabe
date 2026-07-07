@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { updateLead } from "@/lib/leads/update-lead";
 import { addContactLog } from "@/lib/leads/contact-logs";
+import { clearFollowUp } from "@/lib/leads/follow-up";
 import { updateLeadSchema } from "@/lib/validations/update-lead";
 import { addContactLogSchema } from "@/lib/validations/contact-log";
 
@@ -63,6 +64,7 @@ export async function updateLeadAction(
 
   revalidatePath(`/admin/leads/${leadIdParsed.data}`);
   revalidatePath("/admin/leads");
+  revalidatePath("/admin/seguimientos");
   revalidatePath("/admin/dashboard");
 
   return {};
@@ -119,6 +121,50 @@ export async function addContactLogAction(
 
   revalidatePath(`/admin/leads/${leadIdParsed.data}`);
   revalidatePath("/admin/leads");
+  revalidatePath("/admin/seguimientos");
+  revalidatePath("/admin/dashboard");
+
+  return {};
+}
+
+export interface CompleteFollowUpState {
+  error?: string;
+}
+
+/**
+ * Marca la tarea de seguimiento de un lead como completada, sin requerir
+ * un contact_log: limpia next_follow_up_at para que salga del Centro de
+ * Seguimientos. Para dejar registro de qué se conversó, usar
+ * addContactLogAction en su lugar.
+ */
+export async function completeFollowUpAction(
+  _prevState: CompleteFollowUpState,
+  formData: FormData,
+): Promise<CompleteFollowUpState> {
+  const leadIdParsed = leadIdSchema.safeParse(formData.get("leadId"));
+
+  if (!leadIdParsed.success) {
+    return { error: "Lead inválido." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "No autorizado." };
+  }
+
+  const result = await clearFollowUp(supabase, leadIdParsed.data);
+
+  if (!result.ok) {
+    return { error: "No pudimos actualizar el seguimiento. Intenta de nuevo." };
+  }
+
+  revalidatePath(`/admin/leads/${leadIdParsed.data}`);
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin/seguimientos");
   revalidatePath("/admin/dashboard");
 
   return {};

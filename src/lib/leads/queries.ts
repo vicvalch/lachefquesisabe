@@ -165,3 +165,27 @@ export async function listUpcomingFollowUps(
 
   return data;
 }
+
+/**
+ * Todos los leads con un próximo seguimiento programado (vencido, de hoy o
+ * futuro), para el Centro de Seguimientos. A diferencia de
+ * listUpcomingFollowUps, no filtra por fecha: la agrupación en
+ * vencidas/hoy/próximas la hace groupFollowUpTasks.
+ */
+export async function listFollowUpTasks(
+  supabase: SupabaseClient<Database>,
+  limit = 200,
+): Promise<LeadRow[]> {
+  const { data, error } = await supabase
+    .from("leads")
+    .select("*")
+    .not("next_follow_up_at", "is", null)
+    .order("next_follow_up_at", { ascending: true })
+    .limit(limit);
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data;
+}

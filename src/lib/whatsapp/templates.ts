@@ -10,8 +10,14 @@ const INTEREST_PHRASES: Record<PrimaryInterest, string> = {
   more_info: "lo que me contaste",
 };
 
+export type WhatsAppTemplateId =
+  | "primer_contacto"
+  | "seguimiento"
+  | "recordatorio_demo"
+  | "post_demo";
+
 export interface WhatsAppTemplate {
-  id: string;
+  id: WhatsAppTemplateId;
   label: string;
   build: (lead: LeadRow) => string;
 }
