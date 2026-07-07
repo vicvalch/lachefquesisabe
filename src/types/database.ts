@@ -45,6 +45,12 @@ export type AttendanceStatus =
   | "no_show"
   | "cancelled";
 
+export type ContentType = "recipe" | "tip" | "guide";
+
+export type ContentStatus = "draft" | "published" | "archived";
+
+export type ContentDifficulty = "easy" | "medium" | "hard";
+
 export type LeadRow = {
   id: string;
   created_at: string;
@@ -194,6 +200,107 @@ export type DemoRegistrationUpdate = {
   notes?: string | null;
 };
 
+export type ContentCategoryRow = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
+
+export type ContentCategoryInsert = {
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  sort_order?: number;
+  is_active?: boolean;
+};
+
+export type ContentCategoryUpdate = {
+  name?: string;
+  slug?: string;
+  description?: string | null;
+  sort_order?: number;
+  is_active?: boolean;
+};
+
+export type ContentPostRow = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  published_at: string | null;
+  created_by: string | null;
+  category_id: string | null;
+  title: string;
+  slug: string;
+  content_type: ContentType;
+  status: ContentStatus;
+  excerpt: string | null;
+  body: string;
+  ingredients: string | null;
+  instructions: string | null;
+  prep_time_minutes: number | null;
+  cook_time_minutes: number | null;
+  servings: number | null;
+  difficulty: ContentDifficulty | null;
+  image_url: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  featured: boolean;
+};
+
+export type ContentPostInsert = {
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+  published_at?: string | null;
+  created_by?: string | null;
+  category_id?: string | null;
+  title: string;
+  slug: string;
+  content_type?: ContentType;
+  status?: ContentStatus;
+  excerpt?: string | null;
+  body: string;
+  ingredients?: string | null;
+  instructions?: string | null;
+  prep_time_minutes?: number | null;
+  cook_time_minutes?: number | null;
+  servings?: number | null;
+  difficulty?: ContentDifficulty | null;
+  image_url?: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  featured?: boolean;
+};
+
+export type ContentPostUpdate = {
+  published_at?: string | null;
+  category_id?: string | null;
+  title?: string;
+  slug?: string;
+  content_type?: ContentType;
+  status?: ContentStatus;
+  excerpt?: string | null;
+  body?: string;
+  ingredients?: string | null;
+  instructions?: string | null;
+  prep_time_minutes?: number | null;
+  cook_time_minutes?: number | null;
+  servings?: number | null;
+  difficulty?: ContentDifficulty | null;
+  image_url?: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  featured?: boolean;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -219,6 +326,18 @@ export type Database = {
         Row: DemoRegistrationRow;
         Insert: DemoRegistrationInsert;
         Update: DemoRegistrationUpdate;
+        Relationships: [];
+      };
+      content_categories: {
+        Row: ContentCategoryRow;
+        Insert: ContentCategoryInsert;
+        Update: ContentCategoryUpdate;
+        Relationships: [];
+      };
+      content_posts: {
+        Row: ContentPostRow;
+        Insert: ContentPostInsert;
+        Update: ContentPostUpdate;
         Relationships: [];
       };
     };

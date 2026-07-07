@@ -9,15 +9,21 @@ Thermomix.
 Este repositorio contiene el **PR 1** (landing, captura de leads, Supabase,
 admin con login y un dashboard inicial), el **PR 2** (detalle de lead,
 estados comerciales ampliados, notas, próximos seguimientos, bitácora de
-contactos y plantillas de WhatsApp) y el **PR 3**: módulo de demostraciones
+contactos y plantillas de WhatsApp), el **PR 3** (módulo de demostraciones
 completo, tanto para el equipo admin (`/admin/demos`: crear demos, agregar
 leads, controlar asistencia) como para el público (`/demos`: ver próximas
-demostraciones y registrarse a una desde el sitio, sin sesión), para que el
-tráfico del sitio se convierta en registros reales y el equipo pueda dar
-seguimiento manual por WhatsApp sin depender de hojas sueltas. No incluye
-automatizaciones, WhatsApp API, email automation, HubSpot, pagos online,
-campañas avanzadas, recetas en CMS ni integración con Google Calendar — eso
-queda para PRs posteriores.
+demostraciones y registrarse a una desde el sitio, sin sesión)) y el **PR
+4**: un content hub flexible (categorías + posts de contenido: recetas,
+tips y guías), administrable desde `/admin/content` (crear, editar,
+publicar, despublicar/archivar) y publicado en `/recetas` (la ruta pública
+sigue hablando de "recetas" porque comercialmente es más claro, aunque el
+modelo interno soporta los tres tipos de contenido), con CTAs hacia las
+demos y la captura de leads, para que el sitio deje de ser solo landing +
+demos y empiece a atraer tráfico propio. No incluye automatizaciones,
+WhatsApp API, email automation, HubSpot, pagos, carrito, inventario,
+cursos pagos, membresías, subida avanzada de imágenes, IA generativa,
+comentarios públicos, ratings, favoritos, login de usuarios finales ni
+newsletter avanzada — eso queda para PRs posteriores.
 
 ## Stack
 
@@ -37,6 +43,9 @@ src/
     demos/                    # Sitio público de demostraciones
       page.tsx                 # Próximas demos (cards)
       [slug]/page.tsx           # Detalle de una demo + formulario de registro
+    recetas/                  # Sitio público del content hub (recetas/tips/guías)
+      page.tsx                 # Posts publicados (cards) con filtros ?type y ?category
+      [slug]/page.tsx           # Detalle de un post + CTAs
     gracias/                  # Thank-you page (leads y registros a demo)
     api/
       leads/route.ts           # Endpoint de captura de leads (landing)
@@ -48,25 +57,35 @@ src/
         demos/                  # Listado, creación y detalle de demostraciones
           [id]/                  # Roster, cupo y asistencia de una demo
           new/                   # Crear una demo
+        content/                 # Listado, creación y edición de contenido
+          [id]/                    # Editar y publicar/despublicar/archivar
+          new/                     # Crear receta, tip o guía (borrador o publicado)
   components/
     landing/                  # Header, Hero, Features, LeadForm, Footer...
     demos/                    # DemoCard, PublicDemoRegistrationForm (sitio público)
+    content/                  # ContentPostCard, ContentCtaSection, ContentFilterBar
+                               # (sitio público)
     admin/                    # Sidebar, StatCard, LeadsTable, LeadInfoCard,
                                # LeadUpdateForm, ContactLogForm/Timeline,
                                # UpcomingFollowUps, WhatsAppTemplates,
                                # DemoEventForm/InfoCard/StatusForm,
                                # DemoEventsList, DemoRegistrationForm,
                                # DemoRosterTable, DemoTemplateActions,
-                               # UpcomingDemos, LoginForm...
-    ui/                       # Button, Input, Field, Select, Textarea, Card, Badge
+                               # UpcomingDemos, ContentPostForm, ContentPostsTable,
+                               # RecentContentPosts, LoginForm...
+    ui/                       # Button, Input, Field, Select, Textarea, Card, Badge,
+                               # SafeTextRenderer
   lib/
     supabase/                 # Clientes de Supabase (server + proxy/sesión)
     validations/               # Schemas Zod compartidos (incluye registro público a demo)
     leads/                     # Capa de acceso a datos de leads (testeable)
     demos/                     # Capa de acceso a datos de demos e inscripciones,
                                 # registro público, slugs y formato de fecha/hora
+    content/                   # Capa de acceso a datos de content_categories y
+                                # content_posts, slugs únicos y estadísticas para
+                                # el dashboard
     whatsapp/                  # Plantillas (leads y demos) y utilidades de WhatsApp
-    actions/                   # Server actions (auth, leads, contact logs, demos)
+    actions/                   # Server actions (auth, leads, contact logs, demos, content)
   proxy.ts                     # Protege /admin (antes "middleware.ts")
 supabase/
   migrations/
@@ -76,6 +95,8 @@ supabase/
     0003_demo_events.sql       # demo_events, demo_registrations y políticas RLS
                                 # (admin + lectura/registro público)
     0004_leads_email_optional.sql  # leads.email pasa a ser opcional
+    0005_content_hub.sql       # content_categories y content_posts, políticas RLS
+                                # (admin + lectura pública acotada) y seed de categorías
 ```
 
 ## Configuración
@@ -169,6 +190,33 @@ el registro público a una demo pide WhatsApp obligatorio y email opcional
 (WhatsApp es el canal principal para confirmar el lugar). El formulario
 general de la landing sigue pidiendo email obligatorio a nivel de Zod; esto
 solo permite que la base acepte el otro flujo.
+
+**`0005_content_hub.sql`** (PR 4) agrega el content hub (categorías +
+posts de contenido), con visibilidad admin **y** pública:
+
+- `content_categories`: `name`, `slug` (único), `description`,
+  `sort_order`, `is_active`. Se siembran 5 categorías iniciales: Recetas
+  fáciles, Ahorro de tiempo, Familia, Postres y Demos Thermomix
+  (`on conflict (slug) do nothing`, así que reaplicar la migración no
+  duplica filas).
+- `content_posts`: `title`, `slug` (único, generado en el servidor),
+  `content_type` (`recipe`, `tip`, `guide`), `status` (`draft`,
+  `published`, `archived`), `category_id` (opcional, `on delete set
+  null`), `excerpt`, `body`, `ingredients`, `instructions`,
+  `prep_time_minutes`, `cook_time_minutes`, `servings`, `difficulty`
+  (`easy`/`medium`/`hard`, opcional), `image_url`, `seo_title`,
+  `seo_description`, `featured` y `published_at`. `updated_at` se
+  mantiene con el mismo trigger `set_updated_at()` que ya usa
+  `demo_events`.
+- El equipo **autenticado** puede leer/insertar/actualizar/borrar ambas
+  tablas sin restricciones.
+- El rol **`anon`** (sitio público, sin sesión) puede:
+  - **Leer** `content_categories` solo cuando `is_active = true`.
+  - **Leer** `content_posts` solo cuando `status = 'published' and
+    published_at is not null and published_at <= now()` — así es como
+    `/recetas` y `/recetas/[slug]` filtran borradores, contenido
+    archivado o programado a futuro sin necesitar lógica extra en la app.
+  - Nunca puede insertar, actualizar ni borrar ninguna de las dos tablas.
 
 ### 3. Crear el usuario admin
 
@@ -312,6 +360,90 @@ lead, demo)`, que rellena `{{name}}`, `{{demo_title}}`, `{{demo_date}}`,
 WhatsApp: `DemoTemplateActions` en el roster de `/admin/demos/[id]` solo
 copia el mensaje al portapapeles o abre un link `wa.me`.
 
+## Content hub (PR 4)
+
+El modelo interno es un **content hub genérico**: `content_categories`
+(categorías) + `content_posts` (posts de tipo receta, tip o guía), no un
+modelo específico de "recetas". La ruta pública principal sigue llamándose
+`/recetas` porque comercialmente es más claro para la audiencia del sitio,
+pero lista y sirve los tres tipos de contenido.
+
+### Sitio público
+
+- **`/recetas`**: lista los posts **publicados** (`status = 'published'`,
+  `published_at` no nulo y ya cumplido — lo mismo que filtra RLS),
+  ordenados por `featured` descendente, luego `published_at` descendente y
+  luego `created_at` descendente. Admite filtros simples por query param:
+  `?type=recipe|tip|guide` y `?category=<slug-de-categoría>` (combinables,
+  ej. `/recetas?type=tip&category=ahorro-de-tiempo`), con una barra de
+  filtros (`ContentFilterBar`) que arma esos links preservando el filtro
+  contrario. Cada card muestra título, extracto, categoría (si tiene),
+  tipo de contenido, tiempo total (preparación + cocción) y dificultad si
+  se definieron, y un CTA contextual ("Leer receta"/"Leer tip"/"Leer
+  guía"). Si no hay contenido para el filtro activo, muestra un mensaje
+  invitando a dejar los datos en la landing.
+- **`/recetas/[slug]`**: detalle completo (tipo, categoría, fecha de
+  publicación, imagen si existe, tiempos de preparación/cocción/total,
+  porciones, dificultad, lista de ingredientes e instrucciones si se
+  definieron, y el cuerpo del post). Si el post no existe, está en
+  borrador o archivado, la página responde 404 — la query de datos exige
+  `status = 'published'` además de la fecha de publicación ya cumplida, lo
+  mismo que exige RLS. El cuerpo (`body`) se renderiza con
+  `SafeTextRenderer` (ver abajo), nunca con `dangerouslySetInnerHTML`. Al
+  final hay una sección de **CTAs** con botones hacia `/demos`, hacia el
+  formulario de leads de la landing (`/#contacto`) y hacia `/recetas` — y
+  hasta 2 posts relacionados para seguir navegando.
+- El link "Recetas" del header del sitio apunta a `/recetas`.
+- **SEO** (`generateMetadata`): en el detalle, `title` usa `seo_title` si
+  existe (si no, `"<título> | La Chef que Sí Sabe"`) y `description` usa
+  `seo_description` si existe (si no, `excerpt`; si tampoco, una
+  descripción genérica). El listado usa un título y descripción fijos
+  orientados a SEO general del content hub.
+
+### `SafeTextRenderer`
+
+`src/components/ui/SafeTextRenderer.tsx` renderiza el `body` (texto plano
+editado por el admin) separando párrafos por líneas en blanco dobles y
+detectando listas simples (todas las líneas de un bloque empezando con
+`- ` o `* `). Nunca interpreta HTML: no usa `dangerouslySetInnerHTML`, así
+que cualquier `<script>` o etiqueta que un admin escriba por error se
+muestra como texto literal en vez de ejecutarse. Cubierto por tests
+(`SafeTextRenderer.test.tsx`) que confirman que una etiqueta en el texto
+nunca termina en el DOM como elemento real.
+
+### Panel admin
+
+`/admin/content` lista todo el contenido (cualquier estado), con su tipo,
+categoría, fecha de creación y estado. La navegación del panel dice
+**"Contenido"**, no "Recetas", porque desde ahí se gestionan recetas,
+tips y guías por igual.
+
+- **Crear contenido** (`/admin/content/new`): título, tipo (receta/tip/
+  guía), categoría (opcional, del catálogo de `content_categories`),
+  estado (borrador/publicado/archivado — se puede publicar directamente
+  al crear), extracto, imagen (solo un link — no hay subida de archivos
+  todavía), tiempos de preparación/cocción, porciones, dificultad,
+  ingredientes e instrucciones (opcionales, una línea por ítem), el cuerpo
+  del post, título/descripción SEO opcionales y un checkbox "Destacado".
+  `created_by` y el `slug` (generado a partir del título, con sufijo
+  `-2`/`-3`... si ya existe uno igual) salen del servidor, nunca del
+  formulario. Si se crea directamente en `published` y no hay
+  `published_at`, se fija a la hora actual.
+- **Editar contenido** (`/admin/content/[id]`): mismo formulario, incluido
+  el selector de **Estado** — así se publica, despublica (vuelve a
+  borrador) o archiva desde el mismo lugar donde se edita el contenido.
+  Al pasar a `published` por primera vez se guarda `published_at`; al
+  volver a `draft` se limpia (`published_at = null`, como si nunca se
+  hubiera publicado); al archivar no se toca, para conservar cuándo se
+  publicó por última vez. El contenido archivado nunca aparece en
+  `/recetas` (la condición pública exige `status = 'published'`).
+
+`/admin/dashboard` incluye una tarjeta **Contenido publicado** (con lo que
+sigue en borrador/archivado como dato secundario) y una sección
+**Contenido reciente** con hasta 5 posts (título, estado, tipo, última
+actualización y un link para editar), ordenados por `updated_at`
+descendente.
+
 ## Notas de seguridad
 
 - El formulario de leads incluye un campo honeypot y validación server-side
@@ -356,3 +488,30 @@ copia el mensaje al portapapeles o abre un link `wa.me`.
   valida `status`/`starts_at` en la aplicación además de en RLS (defensa
   en profundidad), igual que el resto de las server actions verifican la
   sesión aunque la ruta ya esté protegida.
+- `content_categories` y `content_posts` (PR 4) siguen el mismo patrón que
+  `demo_events`: el equipo autenticado tiene CRUD completo
+  (`lib/actions/content.ts` verifica la sesión con
+  `supabase.auth.getUser()` antes de escribir, y `created_by` en
+  `content_posts` sale de esa sesión, nunca del formulario o del payload;
+  `created_at` tampoco se acepta desde el formulario — la capa de datos
+  (`lib/content/create-content-post.ts`, `lib/content/update-content-post.ts`)
+  construye el payload con un **allowlist explícito** de campos, nunca
+  reenvía el input completo). El rol `anon`:
+  - solo puede **leer** categorías con `is_active = true` y posts con
+    `status = 'published' and published_at is not null and published_at
+    <= now()` (`0005_content_hub.sql`) — nunca ve borradores ni contenido
+    archivado, sin importar la fecha.
+  - no puede insertar, actualizar ni borrar categorías ni posts. No hay
+    comentarios, ratings ni favoritos públicos todavía.
+
+  `lib/content/rls-policies.test.ts` deja esto como prueba de regresión
+  sobre el SQL de la migración (incluye una prueba que confirma que la
+  condición de `anon` sobre `content_posts` nunca menciona `draft` ni
+  `archived`).
+- `/admin/content` está protegido por los mismos dos niveles que el resto
+  de `/admin/*` (proxy + verificación en el layout).
+- El cuerpo de los posts (`content_posts.body`) se renderiza en
+  `/recetas/[slug]` con `SafeTextRenderer`, que nunca usa
+  `dangerouslySetInnerHTML` — cualquier HTML que un admin escriba por
+  error en el contenido se muestra como texto literal, nunca se ejecuta ni
+  se inserta en el DOM.

@@ -3,7 +3,7 @@ import { Logo } from "@/components/brand/Logo";
 import { buttonClasses } from "@/components/ui/Button";
 
 const NAV_LINKS = [
-  { href: "#recetas", label: "Recetas" },
+  { href: "/recetas", label: "Recetas" },
   { href: "#thermomix", label: "Thermomix" },
   { href: "/demos", label: "Demos" },
   { href: "#contacto", label: "Contacto" },
