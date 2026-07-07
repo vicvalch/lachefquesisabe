@@ -14,6 +14,7 @@ function buildTask(overrides: Partial<FollowUpTaskRow> = {}): FollowUpTaskRow {
     lead_id: "lead-1",
     demo_event_id: null,
     contact_log_id: null,
+    campaign_id: null,
     created_by: null,
     title: "Dar seguimiento",
     message_template_key: "recontacto-suave",

@@ -29,12 +29,18 @@ el admin (`message_templates`, con listado + creación + edición en
 PR 2/PR 3. El Centro de Seguimientos (`/admin/seguimientos`) ahora se basa
 en tareas reales; `leads.next_follow_up_at` se mantiene, pero como
 snapshot derivado de esas tareas (no como fuente de verdad ni campo
-editable a mano). No incluye automatizaciones, WhatsApp API, email
-automation, HubSpot, pagos, carrito, inventario, cursos pagos,
-membresías, subida avanzada de imágenes, IA generativa, comentarios
-públicos, ratings, favoritos, login de usuarios finales, newsletter
-avanzada, cron jobs ni envío automático de mensajes — eso queda para PRs
-posteriores.
+editable a mano). Y el **PR 7**: segmentación de leads (`lead_segments`,
+con un criterio de filtros allowlisted y validado — nunca SQL crudo) y
+campañas manuales de outreach (`outreach_campaigns` +
+`outreach_campaign_recipients`) en dos pasos explícitos, ninguno de los
+cuales envía mensajes: **materializar destinatarios** (snapshotea quién
+matchea el segmento, solo con consentimiento de contacto) y **generar
+tareas de seguimiento** (crea una `follow_up_tasks` por destinatario).
+No incluye automatizaciones, WhatsApp API, email automation, HubSpot,
+pagos, carrito, inventario, cursos pagos, membresías, subida avanzada de
+imágenes, IA generativa, scoring de leads, comentarios públicos, ratings,
+favoritos, login de usuarios finales, newsletter avanzada, cron jobs ni
+envío automático de mensajes — eso queda para PRs posteriores.
 
 ## Stack
 
@@ -74,6 +80,12 @@ src/
         plantillas/              # Listado de plantillas de mensaje (message_templates)
           [id]/                    # Editar una plantilla (label, body, is_active)
           new/                     # Crear una plantilla (define su key)
+        segmentos/               # Listado, creación y detalle de segmentos de leads
+          [id]/                    # Editar filtros + preview de leads + campañas
+          new/                     # Crear un segmento (criterio de filtros)
+        campanas/                # Listado, creación y detalle de campañas manuales
+          [id]/                    # Materializar destinatarios, generar tareas, cancelar
+          new/                     # Crear una campaña (segmento + plantilla + config de tarea)
   components/
     landing/                  # Header, Hero, Features, LeadForm, Footer...
     demos/                    # DemoCard, PublicDemoRegistrationForm (sitio público)
@@ -89,7 +101,12 @@ src/
                                # DemoEventsList, DemoRegistrationForm,
                                # DemoRosterTable, DemoTemplateActions,
                                # UpcomingDemos, ContentPostForm, ContentPostsTable,
-                               # RecentContentPosts, LoginForm...
+                               # RecentContentPosts, LoginForm,
+                               # LeadSegmentForm/EditLeadSegmentForm, LeadSegmentsTable,
+                               # CampaignForm, OutreachCampaignsTable,
+                               # MaterializeRecipientsForm, GenerateCampaignTasksForm,
+                               # CancelCampaignForm, CampaignRecipientsTable,
+                               # LeadCampaignMemberships
     ui/                       # Button, Input, Field, Select, Textarea, Card, Badge,
                                # SafeTextRenderer
   lib/
@@ -106,9 +123,15 @@ src/
     message-templates/         # Queries, creación, edición y renderizado de
                                 # plantillas de mensaje persistidas (reemplaza los
                                 # arreglos estáticos de whatsapp/templates.ts)
+    segments/                  # Criterio de filtros (allowlist), queries
+                                # (listLeadsMatchingCriteria), create/update y resumen
+                                # legible del criterio
+    campaigns/                 # Queries, creación, slug, materializeCampaignRecipients,
+                                # generateFollowUpTasksForCampaign, cancelOutreachCampaign
     whatsapp/                  # Utilidades de wa.me (normalizar teléfono, armar link)
     actions/                   # Server actions (auth, leads, contact logs, demos,
-                                # content, follow-up tasks, message templates)
+                                # content, follow-up tasks, message templates,
+                                # segments, campaigns)
   proxy.ts                     # Protege /admin (antes "middleware.ts")
 supabase/
   migrations/
@@ -123,6 +146,10 @@ supabase/
     0006_follow_up_tasks.sql   # follow_up_tasks y message_templates, 3 triggers
                                 # security definer (creación automática de tareas +
                                 # sincronizar leads.next_follow_up_at)
+    0007_lead_segments_campaigns.sql  # lead_segments (criterio jsonb), outreach_campaigns
+                                # (status, plantilla, config de tarea) y
+                                # outreach_campaign_recipients (status), en dos pasos
+                                # manuales: materializar destinatarios + generar tareas
 ```
 
 ## Configuración
@@ -655,6 +682,172 @@ que la tarea correcta ya está ahí, con el mensaje correcto sugerido, y
 que `leads.next_follow_up_at` refleja esa tarea sin que nadie lo edite a
 mano, cuando la persona administradora entra a hacer el seguimiento.
 
+## Segmentación de leads y campañas manuales (PR 7)
+
+PR 7 agrega dos piezas nuevas para pasar de "tengo leads sueltos" a poder
+organizarlos en grupos y preparar un seguimiento manual ordenado:
+**segmentos** (`lead_segments`) y **campañas manuales de outreach**
+(`outreach_campaigns` + `outreach_campaign_recipients`). Sigue siendo
+100% manual — no hay envío automático de WhatsApp/email, sin cron jobs,
+sin scoring, sin IA generativa. Lo único que "automatiza" son los dos
+pasos explícitos de una campaña, y ninguno de los dos envía nada:
+**materializar destinatarios** y **generar tareas de seguimiento**.
+
+### Segmentos y su criterio de filtros
+
+Un segmento es un nombre + una descripción opcional + un **criterio**
+(`lead_segments.criteria`, `jsonb`). El shape exacto del criterio lo
+define y valida `leadSegmentCriteriaSchema`
+(`src/lib/validations/lead-segment.ts`, `.strict()`): solo estas 15 keys
+están permitidas, todas opcionales (`{}` es un criterio válido, sin
+restricciones), y se combinan siempre con AND:
+
+| Key | Filtra por |
+| --- | --- |
+| `statuses` | `leads.status` (una de varias) |
+| `primary_interests` | `leads.primary_interest` (uno de varios) |
+| `sources` | `leads.source` (una de varias, coincidencia exacta) |
+| `consent_contact` | `leads.consent_contact` |
+| `created_from` / `created_to` | Rango de `leads.created_at` |
+| `last_contacted_before` / `last_contacted_after` | Rango de `leads.last_contacted_at` |
+| `next_follow_up_before` / `next_follow_up_after` | Rango de `leads.next_follow_up_at` |
+| `has_open_follow_up_task` | Tiene o no una `follow_up_tasks` con `status = 'open'` |
+| `demo_event_id` | Inscrito en esa demo (`demo_registrations`) |
+| `demo_attendance_statuses` | `attendance_status` de esa inscripción (una de varios) |
+| `content_post_id` | Ver "Limitación de `content_post_id`" abajo |
+| `search` | Nombre, email o teléfono (máximo 120 caracteres) |
+
+`listLeadsMatchingCriteria` (`src/lib/segments/queries.ts`) calcula en
+vivo qué leads matchean un criterio — no hay tabla de membresía que se
+pueda desincronizar. Ningún filtro se arma con SQL crudo ni con el input
+del usuario interpolado en un string: todo pasa por el query builder de
+Supabase (columna + operador conocidos). En particular, `search` **no**
+arma un `.or()` como string crudo (habría que escapar a mano la sintaxis
+de combinadores de PostgREST, con riesgo real de hacerlo mal): corre 3
+consultas `.ilike()` separadas (nombre, email, teléfono), cada una
+parametrizada, y mezcla los resultados en JS deduplicando por id;
+además escapa `%`, `_` y `\` del término antes de armar el patrón, para
+que un lead buscando literalmente "50%" no dispare un comodín. El
+resultado se acota a `limit` (por defecto 50, pensado para preview); el
+fetch interno escala con ese límite para no perder leads que sí
+matchean por quedar fuera de una ventana fija — quien necesite la lista
+completa (por ejemplo, para materializar una campaña) pasa un límite
+mayor explícito.
+
+`/admin/segmentos` lista los segmentos con su criterio resumido en texto
+(`summarizeLeadSegmentCriteria`) y cuántos leads matchean hoy;
+`/admin/segmentos/new` los crea; `/admin/segmentos/[id]` edita el
+criterio y muestra el preview de leads en vivo junto con las campañas de
+ese segmento.
+
+**Limitación de `content_post_id`**: hoy no existe ninguna relación real
+entre `leads` y `content_posts` (ningún formulario de captura pública
+etiqueta el lead con el post que lo originó). El filtro se resuelve por
+convención vía `leads.source = 'content:<slug>'`
+(`resolveContentPostSourceTag`), lo cual es *forward-compatible* pero no
+produce matches reales todavía — un PR futuro que haga que la captura
+de leads desde `/recetas/[slug]` escriba ese `source` lo activaría sin
+tocar `listLeadsMatchingCriteria`. Se deja documentado acá para que no
+se lea como un bug.
+
+### Campañas manuales, en dos pasos explícitos
+
+Una campaña (`outreach_campaigns`) referencia un segmento y una
+plantilla (`message_template_id`, por `id` — no por `key` — para no
+romper si la plantilla cambia de nombre), más la configuración de la
+tarea que se va a generar por cada destinatario: `task_type` (canal
+sugerido, reutiliza el enum `contact_channel` de `contact_logs`),
+`task_priority` (`low`/`medium`/`high`), `task_title`/`task_notes`
+(con fallback a `"Contactar: <nombre de la campaña>"` si `task_title`
+queda vacío) y `due_at` (si queda vacío, la tarea se genera con la fecha
+de hoy). Crearla no dispara nada: eso son los dos pasos siguientes,
+disponibles desde el detalle de la campaña (`/admin/campanas/[id]`).
+
+1. **Materializar destinatarios** (`materializeCampaignRecipients`,
+   `src/lib/campaigns/materialize-recipients.ts`): snapshotea qué leads
+   matchean el segmento **ahora mismo** como filas de
+   `outreach_campaign_recipients` (`status = 'selected'`). No crea
+   ninguna `follow_up_tasks` todavía, no envía mensajes ni crea
+   `contact_logs`. **Solo incluye leads con `consent_contact = true`**,
+   sin importar lo que diga el criterio del segmento — esta es una
+   protección fija que no se puede desactivar desde el segmento (aunque
+   `consent_contact` también exista como filtro explícito y opcional del
+   criterio, para quien quiera acotar el *preview* por consentimiento
+   antes de llegar a este paso). Idempotente: la constraint `unique
+   (campaign_id, lead_id)` evita duplicar destinatarios, así que correrlo
+   de nuevo más adelante solo agrega los leads que entraron al segmento
+   después. Cambia `campaign.status` a `'ready'` si hay destinatarios y
+   la campaña todavía estaba en `'draft'`.
+2. **Generar tareas de seguimiento**
+   (`generateFollowUpTasksForCampaign`,
+   `src/lib/campaigns/generate-tasks.ts`): crea una `follow_up_tasks`
+   (`source = 'campaign'`) por cada destinatario todavía `'selected'` **y
+   sin `follow_up_task_id`** — nunca recibe una lista de leads por
+   parámetro ni vuelve a calcular el segmento, solo lee
+   `outreach_campaign_recipients`: los destinatarios ya quedaron fijados
+   en el paso 1. Tampoco envía mensajes ni crea `contact_logs`. Por cada
+   tarea creada, actualiza ese recipient a `status = 'task_created'` y
+   guarda su `follow_up_task_id`. Idempotente: un recipient con
+   `follow_up_task_id` ya asignado nunca se vuelve a tocar ni genera una
+   tarea duplicada. Cambia `campaign.status` a `'tasks_created'` (salvo
+   que ya estuviera en `'tasks_created'`, `'completed'` o `'cancelled'`).
+
+Las tareas generadas aparecen en `/admin/seguimientos` como cualquier
+otra: desde ahí se trabajan una por una (copiar/abrir WhatsApp, registrar
+contacto), igual que las automáticas de PR 6.
+
+`campaign.status` (`draft` → `ready` → `tasks_created`, más `completed`
+y `cancelled`) es una columna real, no derivada — cada transición ocurre
+en el paso correspondiente de arriba. `cancelOutreachCampaign`
+(`/admin/campanas/[id]`, botón "Cancelar campaña") la marca `cancelled`
+sin importar en qué paso estaba, sin tocar los destinatarios ni las
+tareas ya generadas. `completed` queda disponible en el modelo (tipos,
+labels, badge) para marcarla a mano más adelante — todavía no tiene un
+botón propio en esta versión.
+
+`outreach_campaign_recipients.status` (`selected` → `task_created`, más
+`skipped` y `cancelled` para el registro manual de excepciones) documenta
+en qué paso está cada destinatario; `skip_reason` queda disponible para
+anotar por qué se saltó uno, aunque esta versión todavía no expone un
+botón para marcarlo así — es la extensión natural más obvia y se dejó
+modelada en la base para no tener que migrar de nuevo.
+
+### Lenguaje manual, no "envío de campaña"
+
+Esta pantalla nunca envía nada — ni WhatsApp, ni email. Por eso la UI y
+esta documentación evitan a propósito "enviar campaña", "enviada" o
+"delivery": el vocabulario es siempre "campaña manual", "materializar
+destinatarios", "generar tareas", "tareas creadas" y "ver seguimientos".
+Lo único que existe al final del flujo son tareas de seguimiento
+ordinarias en `/admin/seguimientos`, para trabajarlas a mano.
+
+### Consentimiento de contacto
+
+**Las campañas manuales solo generan tareas para leads con
+consentimiento de contacto.** `consent_contact` es un filtro explícito y
+opcional del criterio de un segmento (como cualquier otro, ver la tabla
+de arriba) — un segmento puede, si quiere, no filtrar por consentimiento
+en su preview. Pero `materializeCampaignRecipients` vuelve a filtrar por
+`consent_contact = true` siempre, sin importar el criterio del segmento:
+es una protección de la capa de campañas, no del segmento, y no se puede
+desactivar desde la UI.
+
+### Rutas admin
+
+- **`/admin/segmentos`**, **`/admin/segmentos/new`**,
+  **`/admin/segmentos/[id]`**: listado, creación y detalle/edición de
+  segmentos (criterio + preview de leads en vivo + campañas del
+  segmento).
+- **`/admin/campanas`**, **`/admin/campanas/new`**,
+  **`/admin/campanas/[id]`**: listado, creación y detalle de campañas
+  (preview del segmento, materializar destinatarios, generar tareas,
+  cancelar).
+- `/admin/dashboard` incluye una sección **Campañas recientes** (hasta 5,
+  con su estado y cantidad de destinatarios).
+- El detalle de un lead (`/admin/leads/[id]`) incluye una sección
+  **Campañas** con las últimas 5 campañas donde ese lead fue destinatario
+  (`listCampaignsForLead`), para no saturar la vista con historial viejo.
+
 ## Notas de seguridad
 
 - El formulario de leads incluye un campo honeypot y validación server-side
@@ -742,3 +935,29 @@ mano, cuando la persona administradora entra a hacer el seguimiento.
   `dangerouslySetInnerHTML` — cualquier HTML que un admin escriba por
   error en el contenido se muestra como texto literal, nunca se ejecuta ni
   se inserta en el DOM.
+- `lead_segments`, `outreach_campaigns` y `outreach_campaign_recipients`
+  (PR 7) son de uso exclusivo del equipo autenticado: el rol `anon` no
+  tiene **ninguna** policy sobre ninguna de las tres tablas
+  (`lib/segments/rls-policies.test.ts` lo deja como prueba de regresión).
+  A diferencia de `follow_up_tasks`, acá no hay ningún trigger `security
+  definer`: nada de lo que dispara el sitio público toca, ni siquiera
+  indirectamente, estas tablas. `outreach_campaign_recipients` permite
+  `select`/`insert`/`update` a usuarios autenticados pero nunca `delete`
+  — el historial de a quién se seleccionó no se borra, se marca
+  `skipped`/`cancelled`.
+- El criterio de un segmento (`lead_segments.criteria`) nunca se usa para
+  construir SQL crudo: `listLeadsMatchingCriteria`
+  (`src/lib/segments/queries.ts`) solo aplica columna + operador
+  conocidos vía el query builder de Supabase, y el filtro `search` evita
+  por completo armar un `.or()` con el input del usuario interpolado
+  (corre 3 consultas `.ilike()` parametrizadas y mezcla en JS), escapando
+  además `%`/`_`/`\` del término para que no actúe como comodín
+  involuntario.
+- `materializeCampaignRecipients` (`src/lib/campaigns/materialize-recipients.ts`)
+  filtra siempre por `consent_contact = true` antes de crear un
+  destinatario, sin importar el criterio del segmento: ninguna campaña
+  manual puede generar una tarea de contacto para un lead que no
+  autorizó ser contactado. Las server actions de segmentos y campañas
+  (`lib/actions/segments.ts`, `lib/actions/campaigns.ts`) verifican la
+  sesión con `supabase.auth.getUser()` antes de escribir, igual que el
+  resto del admin.

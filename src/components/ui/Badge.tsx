@@ -2,6 +2,7 @@ import type { HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 import type {
   AttendanceStatus,
+  CampaignStatus,
   ContentStatus,
   DemoEventStatus,
   LeadStatus,
@@ -97,6 +98,39 @@ export function AttendanceStatusBadge({
       className={cn(
         "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
         attendanceStatusClasses[status],
+        className,
+      )}
+      {...props}
+    >
+      {label}
+    </span>
+  );
+}
+
+const campaignStatusClasses: Record<CampaignStatus, string> = {
+  draft: "bg-ink/10 text-ink-soft",
+  ready: "bg-brand-100 text-brand-700",
+  tasks_created: "bg-mustard-400/50 text-brand-700",
+  completed: "bg-olive-500/25 text-olive-600",
+  cancelled: "bg-ink/15 text-ink-soft",
+};
+
+interface CampaignStatusBadgeProps extends HTMLAttributes<HTMLSpanElement> {
+  status: CampaignStatus;
+  label: string;
+}
+
+export function CampaignStatusBadge({
+  status,
+  label,
+  className,
+  ...props
+}: CampaignStatusBadgeProps) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
+        campaignStatusClasses[status],
         className,
       )}
       {...props}

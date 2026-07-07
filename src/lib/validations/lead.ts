@@ -44,6 +44,7 @@ const leadStatusValues = LEAD_STATUS_OPTIONS.map((option) => option.value) as [
 ];
 
 export const LEAD_STATUS_VALUES = leadStatusValues;
+export const PRIMARY_INTEREST_VALUES = primaryInterestValues;
 
 export const leadFormSchema = z.object({
   name: z
