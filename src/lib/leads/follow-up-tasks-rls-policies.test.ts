@@ -84,6 +84,21 @@ describe("RLS de follow_up_tasks y message_templates", () => {
     );
   });
 
+  it("demo_confirmation usa la plantilla confirmacion-demo, no recordatorio-demo", () => {
+    const confirmedBranch = migrationSql
+      .split("new.attendance_status = 'confirmed'")[1]
+      .split("elsif")[0];
+    expect(confirmedBranch).toMatch(/'confirmacion-demo'/);
+    expect(confirmedBranch).not.toMatch(/'recordatorio-demo'/);
+  });
+
+  it("recordatorio-demo está reservada para demo_reminder, no para demo_confirmation", () => {
+    expect(migrationSql).toMatch(/'demo_reminder'/);
+    expect(migrationSql).not.toMatch(
+      /new\.attendance_status = 'confirmed'[\s\S]*?'recordatorio-demo'/,
+    );
+  });
+
   it("la tarea de demo evita duplicados por lead+demo mientras esté open", () => {
     expect(migrationSql).toMatch(/status = 'open'/);
   });

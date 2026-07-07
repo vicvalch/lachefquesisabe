@@ -45,7 +45,7 @@ const FOLLOW_UP_SUGGESTIONS: Partial<Record<LeadStatus, FollowUpSuggestion>> = {
   confirmed_demo: {
     taskLabel: "Recordar demo",
     templateKey: "recordatorio-demo",
-    source: "demo_confirmation",
+    source: "demo_reminder",
   },
   no_show: {
     taskLabel: "Reagendar",

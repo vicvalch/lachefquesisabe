@@ -55,17 +55,21 @@ export type TaskStatus = "open" | "completed" | "skipped" | "cancelled";
 
 /**
  * Doble uso intencional: documenta tanto el mecanismo que creó la tarea
- * como su "tipo" (para qué es). Los cinco valores específicos
- * (initial_contact, demo_invitation, demo_confirmation,
+ * como su "tipo" (para qué es). Los seis valores específicos
+ * (initial_contact, demo_invitation, demo_confirmation, demo_reminder,
  * post_demo_follow_up, no_show_recovery) corresponden 1:1 a los eventos
  * automáticos de creación de tareas; status_change cubre el resto de
  * cambios de estado del lead, y contact_log/manual son creaciones desde
- * el admin.
+ * el admin. demo_confirmation (el lead se autoinscribe a una demo,
+ * plantilla confirmacion-demo) y demo_reminder (recordatorio más cerca de
+ * la fecha, plantilla recordatorio-demo) son eventos distintos: no
+ * confundir uno con otro.
  */
 export type TaskSource =
   | "initial_contact"
   | "demo_invitation"
   | "demo_confirmation"
+  | "demo_reminder"
   | "post_demo_follow_up"
   | "no_show_recovery"
   | "status_change"

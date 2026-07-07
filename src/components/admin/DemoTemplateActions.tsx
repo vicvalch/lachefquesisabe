@@ -14,7 +14,7 @@ import type {
 
 const DEFAULT_TEMPLATE_KEY_BY_ATTENDANCE: Record<AttendanceStatus, string> = {
   registered: "invitacion-demo",
-  confirmed: "recordatorio-demo",
+  confirmed: "confirmacion-demo",
   attended: "seguimiento-post-demo",
   no_show: "recuperacion-no-show",
   cancelled: "invitacion-demo",

@@ -24,10 +24,16 @@ describe("getFollowUpSuggestion", () => {
     expect(suggestion.source).toBe("demo_invitation");
   });
 
-  it("sugiere recordatorio-demo / demo_confirmation para leads que confirmaron una demo", () => {
+  it("sugiere recordatorio-demo / demo_reminder para leads que confirmaron una demo", () => {
     const suggestion = getFollowUpSuggestion("confirmed_demo");
     expect(suggestion.templateKey).toBe("recordatorio-demo");
-    expect(suggestion.source).toBe("demo_confirmation");
+    expect(suggestion.source).toBe("demo_reminder");
+  });
+
+  it("no confunde demo_reminder con demo_confirmation: son eventos distintos", () => {
+    expect(getFollowUpSuggestion("confirmed_demo").source).not.toBe(
+      "demo_confirmation",
+    );
   });
 
   it("sugiere recuperacion-no-show / no_show_recovery para leads que no asistieron", () => {

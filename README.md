@@ -260,9 +260,11 @@ abajo):
   `demo_event_id` opcional, `message_template_key` opcional, `status`
   (`open`/`completed`/`skipped`/`cancelled`), `due_at`, `source`
   (`initial_contact`/`demo_invitation`/`demo_confirmation`/
-  `post_demo_follow_up`/`no_show_recovery`/`status_change`/`contact_log`/
-  `manual` — documenta tanto el mecanismo como el "tipo" de la tarea),
-  `completed_at`, `contact_log_id` (qué contacto la resolvió) y `notes`.
+  `demo_reminder`/`post_demo_follow_up`/`no_show_recovery`/
+  `status_change`/`contact_log`/`manual` — documenta tanto el mecanismo
+  como el "tipo" de la tarea; `demo_confirmation` y `demo_reminder` son
+  eventos distintos, ver la tabla más abajo), `completed_at`,
+  `contact_log_id` (qué contacto la resolvió) y `notes`.
 - El equipo **autenticado** puede leer/insertar/actualizar/borrar ambas
   tablas sin restricciones. El rol **`anon`** no tiene ninguna policy
   sobre ninguna de las dos: no lee ni escribe tareas ni plantillas
@@ -273,18 +275,23 @@ abajo):
   - Al insertar un lead con `status = 'new'` → tarea "Enviar primer
     contacto" (`source = initial_contact`, plantilla `primer-contacto`).
   - Al insertar una inscripción a demo con `attendance_status =
-    'registered'` (el equipo admin agrega un lead a una demo) → tarea
-    "Confirmar demo" (`source = demo_invitation`, plantilla
-    `invitacion-demo`); con `attendance_status = 'confirmed'` (el lead se
-    autoinscribe desde el sitio público) → tarea "Recordar demo" (`source
-    = demo_confirmation`, plantilla `recordatorio-demo`), atada a esa
-    demo.
+    'registered'` (el equipo admin agrega un lead a una demo, todavía sin
+    confirmar) → tarea "Confirmar demo" (`source = demo_invitation`,
+    plantilla `invitacion-demo`); con `attendance_status = 'confirmed'`
+    (el lead se autoinscribe desde el sitio público, ya queda
+    confirmado) → tarea "Enviar confirmación de demo" (`source =
+    demo_confirmation`, plantilla `confirmacion-demo`), atada a esa demo.
 
-  El resto de la creación automática (cambio de estado del lead —
-  incluida la sincronización de asistencia a una demo, que puede generar
-  `post_demo_follow_up` al marcar "asistió" o `no_show_recovery` al
-  marcar "no asistió" —, y el ciclo de completar/saltar/cancelar/
-  reprogramar) vive en TypeScript (`lib/leads/
+  El recordatorio más cerca de la fecha (`source = demo_reminder`,
+  plantilla `recordatorio-demo`) es un evento distinto y posterior: no lo
+  crea este trigger, sino `ensureFollowUpTaskForStatus` cuando
+  `leads.status` pasa a `confirmed_demo` (típicamente porque el equipo
+  admin confirma manualmente la asistencia de una inscripción que había
+  quedado en `registered`). El resto de la creación automática (cambio de
+  estado del lead — incluida la sincronización de asistencia a una demo,
+  que puede generar `post_demo_follow_up` al marcar "asistió" o
+  `no_show_recovery` al marcar "no asistió" —, y el ciclo de completar/
+  saltar/cancelar/reprogramar) vive en TypeScript (`lib/leads/
   follow-up-task-lifecycle.ts`), no en triggers, porque esos caminos ya
   corren siempre con sesión autenticada.
 - Un tercer trigger `security definer` (`sync_lead_next_follow_up_at`,
@@ -569,19 +576,29 @@ fuente de verdad.
   | Evento | `source` | Tarea | Plantilla |
   | --- | --- | --- | --- |
   | Lead nuevo (`status = 'new'`) | `initial_contact` | Enviar primer contacto | `primer-contacto` |
-  | Admin agrega un lead a una demo (`attendance_status` nace `registered`) | `demo_invitation` | Confirmar demo | `invitacion-demo` |
-  | Registro público a una demo (`attendance_status` nace `confirmed`) | `demo_confirmation` | Recordar demo | `recordatorio-demo` |
+  | Admin agrega un lead a una demo (`attendance_status` nace `registered`, sin confirmar) | `demo_invitation` | Confirmar demo | `invitacion-demo` |
+  | Registro público a una demo (`attendance_status` nace `confirmed`) | `demo_confirmation` | Enviar confirmación de demo | `confirmacion-demo` |
+  | Recordatorio más cerca de la fecha (`leads.status` pasa a `confirmed_demo`) | `demo_reminder` | Recordar demo | `recordatorio-demo` |
   | Asistencia marcada como asistió (`attendance_status = 'attended'`) | `post_demo_follow_up` | Seguimiento post-demo | `seguimiento-post-demo` |
   | Asistencia marcada como no asistió (`attendance_status = 'no_show'`) | `no_show_recovery` | Reagendar | `recuperacion-no-show` |
 
-  Los dos primeros (lead nuevo, admin/público inscribiendo a una demo)
-  corren en los triggers de base de datos, porque deben funcionar también
-  cuando el evento lo dispara el formulario público (rol `anon`, sin
-  permiso de escritura sobre `follow_up_tasks`). Los otros dos (asistencia
-  → `post_demo_follow_up`/`no_show_recovery`) llegan por
+  `demo_confirmation` y `demo_reminder` son eventos distintos y no deben
+  confundirse: el primero es la confirmación inmediata de que el lead
+  quedó inscrito (plantilla `confirmacion-demo`); el segundo es el
+  recordatorio posterior, más cerca de la fecha (plantilla
+  `recordatorio-demo`).
+
+  Los dos primeros de la tabla (lead nuevo, inscripción a una demo) corren
+  en los triggers de base de datos, porque deben funcionar también cuando
+  el evento lo dispara el formulario público (rol `anon`, sin permiso de
+  escritura sobre `follow_up_tasks`). Los otros tres (`demo_reminder`,
+  `post_demo_follow_up`, `no_show_recovery`) llegan por
+  `ensureFollowUpTaskForStatus` — `demo_reminder` cuando `leads.status`
+  pasa a `confirmed_demo` (por ejemplo, al confirmar manualmente una
+  inscripción que había quedado en `registered`); los otros dos vía
   `updateAttendanceStatus`, que sincroniza `leads.status` y en el mismo
-  paso llama a `ensureFollowUpTaskForStatus`: siempre corre con sesión
-  autenticada, así que no necesita un trigger.
+  paso llama a `ensureFollowUpTaskForStatus`. Todos corren siempre con
+  sesión autenticada, así que no necesitan un trigger.
 
   Además:
   - Cambiar el `status` de un lead a `contacted`/`interested` (sin un

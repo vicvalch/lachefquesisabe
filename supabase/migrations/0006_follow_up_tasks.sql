@@ -25,18 +25,29 @@ exception
 end $$;
 
 -- `source` documenta tanto el mecanismo (qué disparó el insert) como el
--- "tipo" de seguimiento (para qué es la tarea): los cinco valores más
--- específicos (initial_contact, demo_invitation, demo_confirmation,
--- post_demo_follow_up, no_show_recovery) corresponden 1:1 a los eventos
--- automáticos de creación de tareas descritos abajo. status_change cubre
--- el resto de cambios de estado del lead sin un evento tan específico
--- (contacted, interested); contact_log y manual son creaciones desde el
--- admin (programar el siguiente seguimiento / tarea libre).
+-- "tipo" de seguimiento (para qué es la tarea): los seis valores más
+-- específicos corresponden 1:1 a los eventos automáticos de creación de
+-- tareas descritos abajo:
+--   - initial_contact: lead nuevo (plantilla primer-contacto).
+--   - demo_invitation: el admin agrega un lead a una demo, todavía sin
+--     confirmar (plantilla invitacion-demo).
+--   - demo_confirmation: el lead se autoinscribe públicamente a una demo
+--     (queda confirmado de una) (plantilla confirmacion-demo).
+--   - demo_reminder: recordatorio más cerca de la fecha de una demo ya
+--     confirmada (plantilla recordatorio-demo).
+--   - post_demo_follow_up: el lead asistió a la demo (plantilla
+--     seguimiento-post-demo).
+--   - no_show_recovery: el lead no asistió (plantilla recuperacion-no-show).
+-- status_change cubre el resto de cambios de estado del lead sin un
+-- evento tan específico (contacted, interested); contact_log y manual
+-- son creaciones desde el admin (programar el siguiente seguimiento /
+-- tarea libre).
 do $$ begin
   create type task_source as enum (
     'initial_contact',
     'demo_invitation',
     'demo_confirmation',
+    'demo_reminder',
     'post_demo_follow_up',
     'no_show_recovery',
     'status_change',
@@ -257,12 +268,16 @@ create trigger leads_create_initial_follow_up_task
 -- 4. Creación automática de la tarea de seguimiento al inscribir un lead en
 -- una demo:
 -- - El equipo admin agrega un lead a una demo (`attendance_status` nace en
---   'registered') => evento "admin agrega lead a demo", tarea
---   "Confirmar demo" / source `demo_invitation`.
+--   'registered', todavía sin confirmar) => evento "admin agrega lead a
+--   demo", tarea "Confirmar demo" / source `demo_invitation` / plantilla
+--   `invitacion-demo`.
 -- - El lead se autoinscribe desde el sitio público, que siempre inserta
 --   `attendance_status = 'confirmed'` directamente (rol `anon`) => evento
---   "registro público a demo", tarea "Recordar demo" / source
---   `demo_confirmation`.
+--   "registro público a demo", tarea "Enviar confirmación de demo" /
+--   source `demo_confirmation` / plantilla `confirmacion-demo`.
+--   (El recordatorio más cerca de la fecha, con la plantilla
+--   `recordatorio-demo`, es una tarea distinta —source `demo_reminder`—
+--   que se crea más adelante desde `ensureFollowUpTaskForStatus`, no acá.)
 -- Igual que arriba, `security definer` es necesario para que el camino
 -- público (anon) pueda disparar el insert.
 create or replace function public.create_demo_follow_up_task()
@@ -281,8 +296,8 @@ begin
     template_key := 'invitacion-demo';
     task_source_value := 'demo_invitation';
   elsif new.attendance_status = 'confirmed' then
-    task_title := 'Recordar demo';
-    template_key := 'recordatorio-demo';
+    task_title := 'Enviar confirmación de demo';
+    template_key := 'confirmacion-demo';
     task_source_value := 'demo_confirmation';
   else
     return new;
