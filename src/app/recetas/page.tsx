@@ -45,12 +45,11 @@ export default async function PublicRecipesPage({
       <main className="flex-1">
         <section className="mx-auto max-w-5xl px-6 py-16">
           <div className="text-center">
-            <h1 className="font-display text-3xl font-semibold text-ink sm:text-4xl">
+            <h1 className="font-display text-3xl font-semibold text-emerald-900 sm:text-4xl">
               Recetas y tips de cocina
             </h1>
             <p className="mt-3 text-ink-soft">
-              Ideas prácticas para cocinar rico y fácil, directo desde la
-              cocina de la chef.
+              Ideas simples para cocinar mejor cada día.
             </p>
           </div>
 
@@ -64,7 +63,7 @@ export default async function PublicRecipesPage({
 
           <div className="mt-12">
             {posts.length === 0 ? (
-              <p className="rounded-3xl border border-dashed border-ink/20 p-10 text-center text-ink-soft">
+              <p className="rounded-3xl border border-dashed border-border p-10 text-center text-ink-soft">
                 Todavía no hay contenido para este filtro. Dejá tus datos en
                 la página principal y te avisamos cuando publiquemos algo
                 nuevo.

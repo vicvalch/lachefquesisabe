@@ -45,17 +45,21 @@ export default async function PublicDemoDetailPage({
       <Header />
       <main className="flex-1">
         <section className="mx-auto max-w-3xl px-6 py-16">
-          <span className="inline-block rounded-full bg-mustard-400/40 px-4 py-1.5 text-sm font-semibold text-brand-700">
-            Cupos limitados
-          </span>
-          <h1 className="mt-4 font-display text-3xl font-semibold text-ink sm:text-4xl">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-block rounded-full bg-brand-50 px-4 py-1.5 text-sm font-semibold text-brand-700">
+              {DEMO_MODE_LABELS[demo.mode]}
+            </span>
+            <span className="inline-block rounded-full bg-olive-500/20 px-4 py-1.5 text-sm font-semibold text-olive-600">
+              Cupos limitados
+            </span>
+          </div>
+          <h1 className="mt-4 font-display text-3xl font-semibold text-emerald-900 sm:text-4xl">
             {demo.title}
           </h1>
           <div className="mt-3 flex flex-col gap-1 text-ink-soft">
-            <p>
+            <p className="font-semibold text-ink">
               {formatDemoDate(demo.starts_at)} · {formatDemoTime(demo.starts_at)}
             </p>
-            <p>{DEMO_MODE_LABELS[demo.mode]}</p>
             {demo.mode === "in_person" ? (
               location && <p>{location}</p>
             ) : (
@@ -74,8 +78,12 @@ export default async function PublicDemoDetailPage({
             </p>
           )}
 
-          <div className="mt-10 rounded-3xl border border-ink/10 bg-white p-8 shadow-sm">
-            <h2 className="font-display text-xl font-semibold text-ink">
+          <p className="mt-8 text-sm font-semibold text-brand-700">
+            Demos personalizadas, simples y sin compromiso.
+          </p>
+
+          <div className="mt-4 rounded-3xl border border-border-soft bg-white-soft p-8 shadow-sm">
+            <h2 className="font-display text-xl font-semibold text-emerald-900">
               Reserva tu lugar
             </h2>
             <div className="mt-6">

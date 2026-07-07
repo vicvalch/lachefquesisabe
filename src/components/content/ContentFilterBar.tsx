@@ -20,8 +20,8 @@ function pillClasses(active: boolean): string {
   return cn(
     "rounded-full px-4 py-1.5 text-sm font-semibold transition-colors",
     active
-      ? "bg-brand-500 text-white"
-      : "border border-ink/10 bg-white text-ink-soft hover:bg-brand-50",
+      ? "bg-brand-700 text-white"
+      : "border border-border bg-white text-ink-soft hover:bg-brand-50",
   );
 }
 
