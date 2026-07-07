@@ -2,7 +2,7 @@ import { forwardRef } from "react";
 import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "outline" | "whatsapp";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -10,11 +10,15 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-brand-500 text-white hover:bg-brand-600 focus-visible:outline-brand-600",
+    "bg-brand-700 text-white hover:bg-brand-800 focus-visible:outline-brand-700",
   secondary:
-    "bg-olive-500 text-white hover:bg-olive-600 focus-visible:outline-olive-600",
+    "bg-olive-500 text-emerald-900 hover:bg-olive-600 focus-visible:outline-olive-600",
   ghost:
-    "bg-transparent text-ink hover:bg-brand-50 focus-visible:outline-brand-500",
+    "bg-transparent text-ink hover:bg-brand-50 focus-visible:outline-brand-700",
+  outline:
+    "border-2 border-white/70 bg-transparent text-white hover:bg-white/10 focus-visible:outline-white",
+  whatsapp:
+    "bg-[#128C4A] text-white hover:bg-[#0E7A40] focus-visible:outline-[#128C4A]",
 };
 
 export function buttonClasses(variant: ButtonVariant = "primary", className?: string) {

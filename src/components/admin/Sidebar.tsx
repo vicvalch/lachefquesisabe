@@ -28,7 +28,7 @@ export function Sidebar() {
 
   return (
     <>
-      <div className="flex items-center justify-between border-b border-ink/10 bg-white px-4 py-3 md:hidden">
+      <div className="flex items-center justify-between border-b border-border-soft bg-white-soft px-4 py-3 md:hidden">
         <Link href="/admin/dashboard" onClick={() => setOpen(false)}>
           <Logo markOnly />
         </Link>
@@ -37,7 +37,7 @@ export function Sidebar() {
           onClick={() => setOpen((value) => !value)}
           aria-label={open ? "Cerrar menú" : "Abrir menú"}
           aria-expanded={open}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-ink/15 text-ink"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-ink"
         >
           <svg
             aria-hidden
@@ -68,7 +68,7 @@ export function Sidebar() {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] shrink-0 -translate-x-full flex-col justify-between border-r border-ink/10 bg-white p-6 transition-transform duration-200 md:static md:z-auto md:w-64 md:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] shrink-0 -translate-x-full flex-col justify-between border-r border-border-soft bg-white-soft p-6 transition-transform duration-200 md:static md:z-auto md:w-64 md:translate-x-0",
           open && "translate-x-0",
         )}
       >

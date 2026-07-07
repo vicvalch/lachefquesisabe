@@ -42,7 +42,7 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="font-display text-2xl font-semibold text-ink">
+        <h1 className="font-display text-2xl font-semibold text-emerald-900">
           Dashboard
         </h1>
         <p className="mt-1 text-sm text-ink-soft">
@@ -75,7 +75,7 @@ export default async function DashboardPage() {
         </p>
         <div className="mt-4">
           {dueFollowUpTasks.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-ink/20 p-6 text-center text-sm text-ink-soft">
+            <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-ink-soft">
               No hay tareas pendientes para hoy.
             </p>
           ) : (
@@ -101,7 +101,7 @@ export default async function DashboardPage() {
         </p>
         <div className="mt-4">
           {newLeads.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-ink/20 p-6 text-center text-sm text-ink-soft">
+            <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-ink-soft">
               No hay leads recientes.
             </p>
           ) : (
@@ -119,7 +119,7 @@ export default async function DashboardPage() {
         </p>
         <div className="mt-4">
           {upcomingDemos.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-ink/20 p-6 text-center text-sm text-ink-soft">
+            <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-ink-soft">
               No hay demos próximas.
             </p>
           ) : (
@@ -145,7 +145,7 @@ export default async function DashboardPage() {
         </p>
         <div className="mt-4">
           {recentCampaigns.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-ink/20 p-6 text-center text-sm text-ink-soft">
+            <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-ink-soft">
               No hay campañas activas.
             </p>
           ) : (

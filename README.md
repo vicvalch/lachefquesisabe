@@ -911,6 +911,72 @@ mobile y documentación.
   [`docs/qa-checklist.md`](./docs/qa-checklist.md) (checklist manual de QA
   y smoke test) son nuevos.
 
+## Identidad visual
+
+El **PR de Brand Visual Refresh** alinea el look & feel del sitio con la
+dirección de marca de la dueña del emprendimiento: cocina natural, gourmet,
+premium y cercana, con foco en las demostraciones de Thermomix. Es un PR de
+tema visual — no agrega módulos, automatizaciones ni integra la API de
+WhatsApp.
+
+### Paleta
+
+Los tokens viven como CSS custom properties en `src/app/globals.css`
+(Tailwind v4, `@theme inline`), así que la mayoría de los componentes se
+retematizan solo con cambiar los valores del token:
+
+| Token | Uso | Valores |
+| --- | --- | --- |
+| `emerald-900` / `emerald-800` / `emerald-700` | Fondos premium (hero, sellos, tarjetas oscuras, login admin) | `#002B22` `#003527` `#013C2B` |
+| `brand-50…800` | Verde Thermomix — acento principal, nunca como fondo masivo | de `#e7f6ed` a `#006b33` (base `#00A651`) |
+| `cream` / `cream-dark` / `white-soft` | Superficies cálidas de lectura | `#FFF8EA` `#EFE6D6` `#FFFDF8` |
+| `olive-500` / `olive-600` | Dorado oliva — solo como detalle/acento | `#B7A96A` `#9D9357` |
+| `ink` / `ink-soft` | Texto principal / texto atenuado | `#10231B` `#5C6B61` |
+| `border` / `border-soft` | Bordes cálidos | `#D8CDBA` `#E5DDCF` |
+| `whatsapp` | Acento de éxito / WhatsApp | `#25D366` |
+
+Los botones sólidos usan `brand-700` (no `brand-500`) como fondo para
+mantener contraste AA con texto blanco; el verde Thermomix más brillante
+(`brand-300`/`brand-500`) se reserva para acentos, íconos y superficies
+claras.
+
+### Tono visual
+
+Natural, gourmet, premium, cercano, cálido, ordenado y mobile-first.
+Se evita a propósito la estética "SaaS genérico" o "dashboard tech": fondos
+verde oscuro se usan solo en secciones puntuales (hero, CTA de WhatsApp,
+tarjeta "por qué cocinar conmigo", login admin), nunca como fondo masivo de
+toda la UI.
+
+### Componentes principales
+
+- `src/components/ui/Button.tsx` — variantes `primary`, `secondary`,
+  `ghost`, `outline` (para fondos oscuros) y `whatsapp`. Botones tipo pill
+  (`rounded-full`).
+- `src/components/ui/Card.tsx` — tarjetas con esquinas grandes, borde cálido
+  y fondo blanco cálido.
+- `src/components/icons.tsx` — set de íconos lineales simples en SVG
+  (reloj, gorro de chef, hoja, destellos, libro, pantalla, corazón,
+  usuarios, WhatsApp, check). No se agregó ninguna librería de íconos.
+- `src/components/landing/WhatsAppCtaSection.tsx` — CTA de WhatsApp
+  reutilizable (tarjeta verde oscuro + botón pill).
+
+### Nota sobre WhatsApp
+
+El botón de WhatsApp del sitio público usa un link manual `wa.me`
+(`src/lib/whatsapp/templates.ts`, ya existente desde PR 2). El número se
+configura opcionalmente con `NEXT_PUBLIC_WHATSAPP_NUMBER` (ver
+`.env.example`); si no está configurado, el CTA cae de vuelta al
+formulario de contacto en vez de abrir un chat con un número inventado.
+**No se integró la API de WhatsApp ni envío automático de mensajes.**
+
+### Nota sobre la marca Thermomix
+
+El sitio menciona Thermomix como parte de la propuesta de valor (demos y
+acompañamiento), pero no crea logos oficiales ni afirma una relación
+oficial con Vorwerk. El footer incluye un disclaimer sutil: "Thermomix® es
+una marca registrada de Vorwerk."
+
 ## Notas de seguridad
 
 - El formulario de leads incluye un campo honeypot y validación server-side

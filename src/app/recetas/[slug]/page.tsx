@@ -85,7 +85,7 @@ export default async function PublicContentPostPage({
             )}
           </div>
 
-          <h1 className="mt-4 font-display text-3xl font-semibold text-ink sm:text-4xl">
+          <h1 className="mt-4 font-display text-3xl font-semibold text-emerald-900 sm:text-4xl">
             {post.title}
           </h1>
 
@@ -128,8 +128,8 @@ export default async function PublicContentPostPage({
           )}
 
           {ingredientLines.length > 0 && (
-            <div className="mt-8 rounded-3xl border border-ink/10 bg-white p-6 shadow-sm">
-              <h2 className="font-display text-lg font-semibold text-ink">
+            <div className="mt-8 rounded-3xl border border-border-soft bg-white-soft p-6 shadow-sm">
+              <h2 className="font-display text-lg font-semibold text-emerald-900">
                 Ingredientes
               </h2>
               <ul className="mt-3 list-disc space-y-1 pl-5 text-ink-soft">
@@ -141,8 +141,8 @@ export default async function PublicContentPostPage({
           )}
 
           {instructionLines.length > 0 && (
-            <div className="mt-6 rounded-3xl border border-ink/10 bg-white p-6 shadow-sm">
-              <h2 className="font-display text-lg font-semibold text-ink">
+            <div className="mt-6 rounded-3xl border border-border-soft bg-white-soft p-6 shadow-sm">
+              <h2 className="font-display text-lg font-semibold text-emerald-900">
                 Instrucciones
               </h2>
               <ol className="mt-3 list-decimal space-y-2 pl-5 text-ink-soft">
@@ -161,7 +161,7 @@ export default async function PublicContentPostPage({
 
           {otherPosts.length > 0 && (
             <div className="mt-16">
-              <h2 className="font-display text-xl font-semibold text-ink">
+              <h2 className="font-display text-xl font-semibold text-emerald-900">
                 Seguir aprendiendo
               </h2>
               <div className="mt-6 grid gap-6 sm:grid-cols-2">

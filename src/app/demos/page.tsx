@@ -16,30 +16,30 @@ export default async function PublicDemosPage() {
     <>
       <Header />
       <main className="flex-1">
-        <section className="mx-auto max-w-5xl px-6 py-16">
-          <div className="text-center">
-            <h1 className="font-display text-3xl font-semibold text-ink sm:text-4xl">
-              Próximas demostraciones
-            </h1>
-            <p className="mt-3 text-ink-soft">
-              Reserva tu lugar en la próxima demo presencial o virtual.
-            </p>
-          </div>
+        <section className="bg-gradient-to-b from-emerald-900 to-emerald-700 px-6 py-16 text-center">
+          <h1 className="font-display text-3xl font-semibold text-white sm:text-4xl">
+            Próximas demostraciones
+          </h1>
+          <p className="mx-auto mt-3 max-w-xl text-cream/85">
+            Demos personalizadas, simples y sin compromiso. Reserva tu lugar
+            en la próxima demo presencial o virtual.
+          </p>
+        </section>
 
-          <div className="mt-12">
-            {demos.length === 0 ? (
-              <p className="rounded-3xl border border-dashed border-ink/20 p-10 text-center text-ink-soft">
-                Pronto tendremos nuevas demostraciones. Dejá tus datos en la
-                página principal y te avisamos.
-              </p>
-            ) : (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {demos.map((demo) => (
-                  <DemoCard key={demo.id} demo={demo} />
-                ))}
-              </div>
-            )}
-          </div>
+        <section className="mx-auto max-w-5xl px-6 py-16">
+          {demos.length === 0 ? (
+            <p className="rounded-3xl border border-dashed border-border p-10 text-center text-ink-soft">
+              Todavía no hay demos programadas. Pronto publicaremos nuevas
+              fechas. También podés escribirnos por WhatsApp para coordinar
+              una demo personalizada.
+            </p>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {demos.map((demo) => (
+                <DemoCard key={demo.id} demo={demo} />
+              ))}
+            </div>
+          )}
         </section>
       </main>
       <Footer />

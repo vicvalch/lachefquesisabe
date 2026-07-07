@@ -3,8 +3,8 @@ import { buttonClasses } from "@/components/ui/Button";
 
 export function ContentCtaSection() {
   return (
-    <div className="mt-10 rounded-3xl border border-ink/10 bg-white p-8 text-center shadow-sm">
-      <h2 className="font-display text-xl font-semibold text-ink">
+    <div className="mt-10 rounded-3xl border border-border-soft bg-white-soft p-8 text-center shadow-sm">
+      <h2 className="font-display text-xl font-semibold text-emerald-900">
         ¿Te gustó? Sigamos cocinando juntas.
       </h2>
       <p className="mt-2 text-ink-soft">
