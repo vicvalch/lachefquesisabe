@@ -61,6 +61,9 @@ describe("createMessageTemplate", () => {
 
     const result = await createMessageTemplate(client, baseInput);
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No se pudo crear la plantilla. Intenta de nuevo.",
+    });
   });
 });

@@ -1,48 +1,43 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getLeadStats } from "@/lib/leads/queries";
+import { listLeads } from "@/lib/leads/queries";
 import { listDueFollowUpTasks } from "@/lib/leads/follow-up-tasks-queries";
+import { groupFollowUpTasks } from "@/lib/leads/follow-up-tasks";
 import {
   getRegistrationCountsByDemoIds,
   listUpcomingDemoEvents,
 } from "@/lib/demos/queries";
-import { getContentStats, listRecentContentPosts } from "@/lib/content/queries";
 import { listRecentOutreachCampaigns } from "@/lib/campaigns/queries";
-import {
-  PRIMARY_INTEREST_OPTIONS,
-  LEAD_STATUS_LABELS,
-} from "@/lib/validations/lead";
 import { StatCard } from "@/components/admin/StatCard";
 import { UpcomingFollowUps } from "@/components/admin/UpcomingFollowUps";
 import { UpcomingDemos } from "@/components/admin/UpcomingDemos";
-import { RecentContentPosts } from "@/components/admin/RecentContentPosts";
 import { OutreachCampaignsTable } from "@/components/admin/OutreachCampaignsTable";
+import { LeadsTable } from "@/components/admin/LeadsTable";
 
 export const metadata = {
   title: "Dashboard | Admin | La Chef que Sí Sabe",
 };
 
+const ACTIVE_CAMPAIGN_STATUSES = new Set(["draft", "ready", "tasks_created"]);
+
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const [
-    stats,
-    dueFollowUpTasks,
-    upcomingDemos,
-    contentStats,
-    recentContent,
-    recentCampaigns,
-  ] = await Promise.all([
-    getLeadStats(supabase),
-    listDueFollowUpTasks(supabase),
-    listUpcomingDemoEvents(supabase, 5),
-    getContentStats(supabase),
-    listRecentContentPosts(supabase, 5),
-    listRecentOutreachCampaigns(supabase, 5),
-  ]);
+  const [dueFollowUpTasks, newLeads, upcomingDemos, recentCampaigns] =
+    await Promise.all([
+      listDueFollowUpTasks(supabase, 8),
+      listLeads(supabase, { status: "new", limit: 5 }),
+      listUpcomingDemoEvents(supabase, 5),
+      listRecentOutreachCampaigns(supabase, 5),
+    ]);
   const demoCounts = await getRegistrationCountsByDemoIds(
     supabase,
     upcomingDemos.map((demo) => demo.id),
   );
+
+  const { overdue, today } = groupFollowUpTasks(dueFollowUpTasks);
+  const activeCampaignsCount = recentCampaigns.filter((campaign) =>
+    ACTIVE_CAMPAIGN_STATUSES.has(campaign.status),
+  ).length;
 
   return (
     <div className="flex flex-col gap-8">
@@ -51,23 +46,16 @@ export default async function DashboardPage() {
           Dashboard
         </h1>
         <p className="mt-1 text-sm text-ink-soft">
-          Resumen de leads capturados desde la landing.
+          Lo que hay que atender hoy: seguimientos, leads nuevos, demos y
+          campañas.
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard label="Leads totales" value={stats.total} />
-        <StatCard
-          label="Últimos 7 días"
-          value={stats.last7Days}
-          hint="Nuevos leads recibidos"
-        />
-        <StatCard label="Nuevos por contactar" value={stats.byStatus.new} />
-        <StatCard
-          label="Contenido publicado"
-          value={contentStats.published}
-          hint={`${contentStats.draft} en borrador · ${contentStats.archived} archivado`}
-        />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Seguimientos vencidos" value={overdue.length} />
+        <StatCard label="Seguimientos para hoy" value={today.length} />
+        <StatCard label="Leads nuevos" value={newLeads.length} />
+        <StatCard label="Campañas activas" value={activeCampaignsCount} />
       </div>
 
       <div>
@@ -86,7 +74,39 @@ export default async function DashboardPage() {
           Tareas de seguimiento vencidas o para hoy.
         </p>
         <div className="mt-4">
-          <UpcomingFollowUps tasks={dueFollowUpTasks} />
+          {dueFollowUpTasks.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-ink/20 p-6 text-center text-sm text-ink-soft">
+              No hay tareas pendientes para hoy.
+            </p>
+          ) : (
+            <UpcomingFollowUps tasks={dueFollowUpTasks} />
+          )}
+        </div>
+      </div>
+
+      <div>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="font-display text-lg font-semibold text-ink">
+            Leads nuevos
+          </h2>
+          <Link
+            href="/admin/leads?status=new"
+            className="text-sm font-semibold text-brand-700 hover:underline"
+          >
+            Ver todos los leads →
+          </Link>
+        </div>
+        <p className="mt-1 text-sm text-ink-soft">
+          Últimos leads recibidos que todavía no fueron contactados.
+        </p>
+        <div className="mt-4">
+          {newLeads.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-ink/20 p-6 text-center text-sm text-ink-soft">
+              No hay leads recientes.
+            </p>
+          ) : (
+            <LeadsTable leads={newLeads} />
+          )}
         </div>
       </div>
 
@@ -98,19 +118,13 @@ export default async function DashboardPage() {
           Demostraciones programadas y su cupo disponible.
         </p>
         <div className="mt-4">
-          <UpcomingDemos demos={upcomingDemos} counts={demoCounts} />
-        </div>
-      </div>
-
-      <div>
-        <h2 className="font-display text-lg font-semibold text-ink">
-          Contenido reciente
-        </h2>
-        <p className="mt-1 text-sm text-ink-soft">
-          Las últimas recetas, tips o guías creadas o editadas.
-        </p>
-        <div className="mt-4">
-          <RecentContentPosts posts={recentContent} />
+          {upcomingDemos.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-ink/20 p-6 text-center text-sm text-ink-soft">
+              No hay demos próximas.
+            </p>
+          ) : (
+            <UpcomingDemos demos={upcomingDemos} counts={demoCounts} />
+          )}
         </div>
       </div>
 
@@ -130,39 +144,13 @@ export default async function DashboardPage() {
           Últimas campañas manuales creadas, con su estado y destinatarios.
         </p>
         <div className="mt-4">
-          <OutreachCampaignsTable campaigns={recentCampaigns} />
-        </div>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <div>
-          <h2 className="font-display text-lg font-semibold text-ink">
-            Por estado
-          </h2>
-          <div className="mt-4 grid grid-cols-2 gap-4">
-            {Object.entries(stats.byStatus).map(([status, count]) => (
-              <StatCard
-                key={status}
-                label={LEAD_STATUS_LABELS[status as keyof typeof LEAD_STATUS_LABELS]}
-                value={count}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <h2 className="font-display text-lg font-semibold text-ink">
-            Por interés
-          </h2>
-          <div className="mt-4 grid grid-cols-2 gap-4">
-            {PRIMARY_INTEREST_OPTIONS.map((option) => (
-              <StatCard
-                key={option.value}
-                label={option.label}
-                value={stats.byInterest[option.value]}
-              />
-            ))}
-          </div>
+          {recentCampaigns.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-ink/20 p-6 text-center text-sm text-ink-soft">
+              No hay campañas activas.
+            </p>
+          ) : (
+            <OutreachCampaignsTable campaigns={recentCampaigns} />
+          )}
         </div>
       </div>
     </div>

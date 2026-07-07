@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
   getOutreachCampaignById,
@@ -14,6 +13,7 @@ import { MaterializeRecipientsForm } from "@/components/admin/MaterializeRecipie
 import { GenerateCampaignTasksForm } from "@/components/admin/GenerateCampaignTasksForm";
 import { CancelCampaignForm } from "@/components/admin/CancelCampaignForm";
 import { LeadsTable } from "@/components/admin/LeadsTable";
+import { EntityNotFoundCard } from "@/components/admin/EntityNotFoundCard";
 import { Card } from "@/components/ui/Card";
 
 export const metadata = {
@@ -32,7 +32,14 @@ export default async function OutreachCampaignDetailPage({
   const campaign = await getOutreachCampaignById(supabase, id);
 
   if (!campaign) {
-    notFound();
+    return (
+      <EntityNotFoundCard
+        title="No encontramos esta campaña"
+        description="Puede haber sido eliminada o el enlace no es correcto."
+        backHref="/admin/campanas"
+        backLabel="Volver a campañas"
+      />
+    );
   }
 
   const [segment, recipients, template] = await Promise.all([

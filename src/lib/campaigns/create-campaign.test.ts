@@ -68,6 +68,9 @@ describe("createOutreachCampaign", () => {
       buildInput(),
     );
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No se pudo crear la campaña. Intenta de nuevo.",
+    });
   });
 });

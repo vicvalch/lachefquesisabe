@@ -43,7 +43,7 @@ export async function generateFollowUpTasksForCampaign(
     .is("follow_up_task_id", null);
 
   if (recipientsError) {
-    return { ok: false, error: recipientsError.message };
+    return { ok: false, error: "No pudimos revisar los destinatarios de la campaña. Intenta de nuevo." };
   }
 
   const { count: alreadyCreatedCount, error: countError } = await supabase
@@ -53,7 +53,7 @@ export async function generateFollowUpTasksForCampaign(
     .eq("status", "task_created");
 
   if (countError) {
-    return { ok: false, error: countError.message };
+    return { ok: false, error: "No pudimos contar las tareas ya creadas. Intenta de nuevo." };
   }
 
   const recipients = selectedRecipients ?? [];
@@ -83,10 +83,7 @@ export async function generateFollowUpTasksForCampaign(
     .select("id, lead_id");
 
   if (tasksError || !insertedTasks) {
-    return {
-      ok: false,
-      error: tasksError?.message ?? "No se pudieron crear las tareas.",
-    };
+    return { ok: false, error: "No se pudieron crear las tareas de seguimiento. Intenta de nuevo." };
   }
 
   const taskIdByLeadId = new Map(insertedTasks.map((task) => [task.lead_id, task.id]));
@@ -106,7 +103,7 @@ export async function generateFollowUpTasksForCampaign(
 
   const updateError = updateResults.find((result) => result.error)?.error;
   if (updateError) {
-    return { ok: false, error: updateError.message };
+    return { ok: false, error: "No pudimos actualizar los destinatarios con su tarea. Intenta de nuevo." };
   }
 
   if (!NON_ADVANCING_STATUSES.has(campaign.status)) {
@@ -116,7 +113,7 @@ export async function generateFollowUpTasksForCampaign(
       .eq("id", campaignId);
 
     if (statusError) {
-      return { ok: false, error: statusError.message };
+      return { ok: false, error: "No pudimos actualizar el estado de la campaña. Intenta de nuevo." };
     }
   }
 

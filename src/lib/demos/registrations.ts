@@ -45,7 +45,7 @@ export async function registerLeadForDemo(
     .eq("demo_event_id", demoEventId);
 
   if (countError) {
-    return { ok: false, error: countError.message };
+    return { ok: false, error: "No pudimos verificar el cupo de la demo. Intenta de nuevo." };
   }
 
   const activeCount = (existing ?? []).filter((row) =>
@@ -68,7 +68,7 @@ export async function registerLeadForDemo(
     if (insertError.code === UNIQUE_VIOLATION_CODE) {
       return { ok: false, error: "Este lead ya está registrado en esta demo." };
     }
-    return { ok: false, error: insertError.message };
+    return { ok: false, error: "No pudimos registrar al lead en la demo. Intenta de nuevo." };
   }
 
   return { ok: true };
@@ -109,7 +109,7 @@ export async function updateAttendanceStatus(
     .eq("id", registrationId);
 
   if (updateError) {
-    return { ok: false, error: updateError.message };
+    return { ok: false, error: "No pudimos guardar la asistencia. Intenta de nuevo." };
   }
 
   const leadStatus = ATTENDANCE_TO_LEAD_STATUS[input.attendance_status];
@@ -120,7 +120,7 @@ export async function updateAttendanceStatus(
       .eq("id", leadId);
 
     if (leadError) {
-      return { ok: false, error: leadError.message };
+      return { ok: false, error: "No pudimos actualizar el estado del lead. Intenta de nuevo." };
     }
 
     return ensureFollowUpTaskForStatus(supabase, leadId, leadStatus, demoEventId);
@@ -143,7 +143,7 @@ export async function removeRegistration(
     .eq("id", registrationId);
 
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: "No pudimos quitar la inscripción. Intenta de nuevo." };
   }
 
   return { ok: true };

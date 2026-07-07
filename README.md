@@ -42,6 +42,18 @@ imágenes, IA generativa, scoring de leads, comentarios públicos, ratings,
 favoritos, login de usuarios finales, newsletter avanzada, cron jobs ni
 envío automático de mensajes — eso queda para PRs posteriores.
 
+Finalmente, el **PR 8** cierra el MVP para producción: no agrega módulos
+nuevos, sino que endurece lo que ya existe — QA de rutas públicas y
+privadas, protección consistente de `/admin/*`, estados vacíos y de error
+amigables en todo el admin, un dashboard priorizado (deja de mostrar todo
+a la vez), pulido mobile-first (sidebar y header con menú colapsable),
+revisión de RLS/policies, y documentación nueva para operar el sitio en
+producción: [`docs/admin-guide.md`](./docs/admin-guide.md) (guía para una
+persona administradora no técnica) y
+[`docs/qa-checklist.md`](./docs/qa-checklist.md) (checklist manual de QA y
+smoke test). Ver "Dashboard, QA y producción (PR 8)" más abajo para el
+detalle completo.
+
 ## Stack
 
 - [Next.js](https://nextjs.org) (App Router) + TypeScript
@@ -355,9 +367,16 @@ npm run dev        # Servidor de desarrollo
 npm run build      # Build de producción
 npm run start      # Servidor de producción
 npm run lint       # ESLint
+npm run typecheck  # TypeScript (tsc --noEmit)
 npm run test       # Tests (Vitest)
 npm run test:watch # Tests en modo watch
 ```
+
+Antes de cada deploy, corré los cuatro (`lint`, `typecheck`, `test`,
+`build`) y completá manualmente el
+[checklist de QA](./docs/qa-checklist.md), que incluye un smoke test
+manual de punta a punta. Para el día a día operando el sitio (no
+técnico), ver la [guía rápida de uso](./docs/admin-guide.md).
 
 ## Detalle de lead y seguimiento (PR 2)
 
@@ -401,8 +420,8 @@ por ejemplo `/admin/leads?status=contacted&interest=buy_thermomix`. Sigue
 limitado a 50 resultados ordenados por `created_at` descendente.
 
 `/admin/dashboard` incluye una sección **Seguimientos pendientes** con
-hasta 5 tareas de seguimiento vencidas o de hoy, ordenadas por `due_at`
-ascendente (ver PR 6).
+tareas de seguimiento vencidas o de hoy, ordenadas por `due_at` ascendente
+(ver "Dashboard (PR 8)" más abajo para el layout completo).
 
 ## Demostraciones (PR 3)
 
@@ -564,11 +583,10 @@ tips y guías por igual.
   publicó por última vez. El contenido archivado nunca aparece en
   `/recetas` (la condición pública exige `status = 'published'`).
 
-`/admin/dashboard` incluye una tarjeta **Contenido publicado** (con lo que
-sigue en borrador/archivado como dato secundario) y una sección
-**Contenido reciente** con hasta 5 posts (título, estado, tipo, última
-actualización y un link para editar), ordenados por `updated_at`
-descendente.
+El contenido no tiene sección propia en `/admin/dashboard` (ver "Dashboard
+(PR 8)" más abajo, que prioriza seguimientos, leads, demos y campañas para
+no saturar la pantalla principal): se gestiona por completo desde
+`/admin/content`.
 
 ## Seguimientos y plantillas de mensaje (PR 6)
 
@@ -848,6 +866,51 @@ desactivar desde la UI.
   **Campañas** con las últimas 5 campañas donde ese lead fue destinatario
   (`listCampaignsForLead`), para no saturar la vista con historial viejo.
 
+## Dashboard, QA y producción (PR 8)
+
+PR 8 no agrega módulos nuevos: cierra el MVP para producción con hardening,
+QA manual, pulido de admin, protección de rutas, estados vacíos/de error,
+mobile y documentación.
+
+- **Dashboard priorizado**: `/admin/dashboard` mostraba demasiadas
+  secciones (leads por estado, por interés, contenido reciente...). Ahora
+  muestra como máximo cinco cosas, en este orden: seguimientos vencidos,
+  seguimientos de hoy, leads nuevos, próximas demos y campañas recientes —
+  cada una con su estado vacío ("No hay tareas pendientes para hoy.", "No
+  hay leads recientes.", etc.). `listDueFollowUpTasks` ahora corta en el
+  fin del día de hoy (no en la hora exacta), para no perder tareas de hoy
+  que todavía no vencieron.
+- **Sidebar responsive**: en mobile (`<md`) se colapsa detrás de un botón
+  de menú (antes quedaba fija en 256px y dejaba casi sin espacio útil al
+  contenido). También marca la sección activa y reordena los enlaces:
+  Dashboard, Leads, Demos, Contenido, Seguimientos, Plantillas, Segmentos,
+  Campañas.
+- **Header público responsive**: el menú (Recetas, Thermomix, Demos,
+  Contacto) estaba oculto por completo en mobile, sin alternativa. Ahora
+  hay un botón de menú que despliega los mismos enlaces.
+- **Estados de error amigables**: los seis detalles de admin (lead, demo,
+  contenido, plantilla, segmento, campaña) ya no usan el 404 genérico de
+  Next.js — muestran una tarjeta con el nombre de la entidad y un botón
+  para volver al listado (`EntityNotFoundCard`). Se agregaron además
+  `not-found.tsx` y `error.tsx` (público y admin) para cualquier otro caso
+  no cubierto explícitamente.
+- **Sin errores crudos de Supabase**: varias acciones (crear/editar
+  contenido, demos, plantillas, segmentos, y los tres pasos de campañas)
+  devolvían el `error.message` de Postgres tal cual al formulario. Ahora
+  todas devuelven un mensaje en español, consistente con el resto del
+  admin (`"No pudimos guardar los cambios. Intenta de nuevo."` y
+  variantes específicas por acción).
+- **Regresión de rutas protegidas**: `src/lib/supabase/proxy.test.ts`
+  cubre `updateSession` (redirige a `/admin/login?redirectTo=...` sin
+  sesión, redirige a `/admin/dashboard` si ya hay sesión y visita
+  `/admin/login`, no toca rutas públicas). `src/lib/leads/rls-policies.test.ts`
+  cubre la RLS de `leads`/`contact_logs` (la única tabla que faltaba tener
+  ese test dedicado, ver "Notas de seguridad" abajo).
+- **Documentación**: [`docs/admin-guide.md`](./docs/admin-guide.md) (guía
+  paso a paso para una persona no técnica) y
+  [`docs/qa-checklist.md`](./docs/qa-checklist.md) (checklist manual de QA
+  y smoke test) son nuevos.
+
 ## Notas de seguridad
 
 - El formulario de leads incluye un campo honeypot y validación server-side
@@ -860,7 +923,9 @@ desactivar desde la UI.
 - El acceso a la base de datos está gobernado por RLS: la app nunca usa la
   `service_role key`. `contact_logs` solo es legible/insertable por
   usuarios autenticados; el rol `anon` no tiene ninguna política sobre esa
-  tabla.
+  tabla. `lib/leads/rls-policies.test.ts` (PR 8) deja esto como prueba de
+  regresión sobre el SQL de `0001_init.sql`/`0002_contact_logs.sql`, igual
+  que ya existía para demos, content hub, follow-up tasks y segmentos.
 - Las server actions (`lib/actions/leads.ts`) verifican la sesión con
   `supabase.auth.getUser()` antes de escribir, además de la protección de
   ruta — nunca confían solo en que el formulario se haya renderizado tras

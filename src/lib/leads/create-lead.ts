@@ -25,7 +25,7 @@ export async function createLead(
   });
 
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: "No pudimos guardar tu información. Intenta de nuevo." };
   }
 
   return { ok: true };

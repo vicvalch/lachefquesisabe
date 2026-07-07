@@ -80,19 +80,21 @@ export async function listOpenFollowUpTasks(
 
 /**
  * Tareas abiertas ya vencidas o de hoy, para el widget "Seguimientos
- * pendientes" del dashboard.
+ * pendientes" del dashboard. El corte es el fin del día de hoy (no la hora
+ * actual), para incluir también las tareas de hoy que todavía no vencieron.
  */
 export async function listDueFollowUpTasks(
   supabase: SupabaseClient<Database>,
   limit = 5,
 ): Promise<FollowUpTaskWithLead[]> {
-  const nowIso = new Date().toISOString();
+  const endOfToday = new Date();
+  endOfToday.setHours(23, 59, 59, 999);
 
   const { data, error } = await supabase
     .from("follow_up_tasks")
     .select("*")
     .eq("status", "open")
-    .lte("due_at", nowIso)
+    .lte("due_at", endOfToday.toISOString())
     .order("due_at", { ascending: true })
     .limit(limit);
 

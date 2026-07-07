@@ -49,7 +49,7 @@ export async function materializeCampaignRecipients(
     .eq("campaign_id", campaignId);
 
   if (recipientsError) {
-    return { ok: false, error: recipientsError.message };
+    return { ok: false, error: "No pudimos revisar los destinatarios actuales. Intenta de nuevo." };
   }
 
   const existingLeadIds = new Set(
@@ -67,7 +67,7 @@ export async function materializeCampaignRecipients(
     );
 
     if (insertError) {
-      return { ok: false, error: insertError.message };
+      return { ok: false, error: "No pudimos guardar los destinatarios. Intenta de nuevo." };
     }
   }
 
@@ -79,7 +79,7 @@ export async function materializeCampaignRecipients(
       .eq("id", campaignId);
 
     if (statusError) {
-      return { ok: false, error: statusError.message };
+      return { ok: false, error: "No pudimos actualizar el estado de la campaña. Intenta de nuevo." };
     }
   }
 

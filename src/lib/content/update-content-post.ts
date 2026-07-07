@@ -51,7 +51,7 @@ export async function updateContentPost(
       .maybeSingle();
 
     if (currentError) {
-      return { ok: false, error: currentError.message };
+      return { ok: false, error: "No pudimos guardar los cambios. Intenta de nuevo." };
     }
 
     if (!current?.published_at) {
@@ -65,7 +65,7 @@ export async function updateContentPost(
     .eq("id", postId);
 
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: "No pudimos guardar los cambios. Intenta de nuevo." };
   }
 
   return { ok: true };

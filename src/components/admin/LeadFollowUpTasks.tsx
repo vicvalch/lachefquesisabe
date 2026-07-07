@@ -96,7 +96,9 @@ export function LeadFollowUpTasks({
   if (tasks.length === 0) {
     return (
       <p className="rounded-2xl border border-dashed border-ink/20 p-6 text-center text-sm text-ink-soft">
-        Este lead todavía no tiene tareas de seguimiento.
+        Este lead todavía no tiene tareas de seguimiento. Se crean
+        automáticamente según su estado, o podés programar una manualmente
+        abajo.
       </p>
     );
   }

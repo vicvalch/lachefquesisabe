@@ -33,10 +33,7 @@ export async function createMessageTemplate(
     if (error?.code === UNIQUE_VIOLATION_CODE) {
       return { ok: false, error: "Ya existe una plantilla con esa clave." };
     }
-    return {
-      ok: false,
-      error: error?.message ?? "No se pudo crear la plantilla.",
-    };
+    return { ok: false, error: "No se pudo crear la plantilla. Intenta de nuevo." };
   }
 
   return { ok: true, id: data.id };

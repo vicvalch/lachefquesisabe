@@ -41,10 +41,7 @@ export async function addContactLog(
     .single();
 
   if (insertError || !inserted) {
-    return {
-      ok: false,
-      error: insertError?.message ?? "No se pudo registrar el contacto.",
-    };
+    return { ok: false, error: "No se pudo registrar el contacto. Intenta de nuevo." };
   }
 
   const { error: updateError } = await supabase
@@ -53,7 +50,7 @@ export async function addContactLog(
     .eq("id", leadId);
 
   if (updateError) {
-    return { ok: false, error: updateError.message };
+    return { ok: false, error: "No pudimos actualizar el último contacto. Intenta de nuevo." };
   }
 
   if (input.task_id) {

@@ -36,6 +36,9 @@ describe("updateMessageTemplate", () => {
 
     const result = await updateMessageTemplate(client, "template-1", baseInput);
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No pudimos guardar la plantilla. Intenta de nuevo.",
+    });
   });
 });

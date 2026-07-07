@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getLeadSegmentById, listLeadsMatchingCriteria } from "@/lib/segments/queries";
 import { listOutreachCampaignsForSegment } from "@/lib/campaigns/queries";
@@ -8,6 +7,7 @@ import { listContentPostsAdmin } from "@/lib/content/queries";
 import { EditLeadSegmentForm } from "@/components/admin/EditLeadSegmentForm";
 import { LeadsTable } from "@/components/admin/LeadsTable";
 import { OutreachCampaignsTable } from "@/components/admin/OutreachCampaignsTable";
+import { EntityNotFoundCard } from "@/components/admin/EntityNotFoundCard";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 
@@ -25,7 +25,14 @@ export default async function LeadSegmentDetailPage({
   const segment = await getLeadSegmentById(supabase, id);
 
   if (!segment) {
-    notFound();
+    return (
+      <EntityNotFoundCard
+        title="No encontramos este segmento"
+        description="Puede haber sido eliminado o el enlace no es correcto."
+        backHref="/admin/segmentos"
+        backLabel="Volver a segmentos"
+      />
+    );
   }
 
   const [matchingLeads, campaigns, demoEvents, contentPosts] = await Promise.all([

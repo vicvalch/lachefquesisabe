@@ -71,10 +71,7 @@ export async function createContentPost(
         error: "Ya existe contenido con ese identificador. Intenta de nuevo.",
       };
     }
-    return {
-      ok: false,
-      error: error?.message ?? "No se pudo crear el contenido.",
-    };
+    return { ok: false, error: "No se pudo crear el contenido. Intenta de nuevo." };
   }
 
   return { ok: true, id: data.id, slug: data.slug };

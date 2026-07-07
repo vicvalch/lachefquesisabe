@@ -19,10 +19,7 @@ export async function createLeadSegment(
     .single();
 
   if (error || !data) {
-    return {
-      ok: false,
-      error: error?.message ?? "No se pudo crear el segmento.",
-    };
+    return { ok: false, error: "No se pudo crear el segmento. Intenta de nuevo." };
   }
 
   return { ok: true, id: data.id };

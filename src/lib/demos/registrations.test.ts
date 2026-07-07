@@ -260,7 +260,10 @@ describe("updateAttendanceStatus", () => {
       baseAttendanceInput,
     );
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No pudimos guardar la asistencia. Intenta de nuevo.",
+    });
     expect(leadUpdate).not.toHaveBeenCalled();
   });
 
@@ -277,7 +280,10 @@ describe("updateAttendanceStatus", () => {
       baseAttendanceInput,
     );
 
-    expect(result).toEqual({ ok: false, error: "lead update failed" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No pudimos actualizar el estado del lead. Intenta de nuevo.",
+    });
   });
 });
 
@@ -301,6 +307,9 @@ describe("removeRegistration", () => {
 
     const result = await removeRegistration({ from } as never, "registration-1");
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No pudimos quitar la inscripción. Intenta de nuevo.",
+    });
   });
 });

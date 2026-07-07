@@ -70,7 +70,7 @@ export async function registerPublicLeadForDemo(
   });
 
   if (leadError) {
-    return { ok: false, error: leadError.message };
+    return { ok: false, error: "No pudimos registrar tus datos. Intenta de nuevo." };
   }
 
   const { error: registrationError } = await supabase
@@ -82,7 +82,7 @@ export async function registerPublicLeadForDemo(
     });
 
   if (registrationError) {
-    return { ok: false, error: registrationError.message };
+    return { ok: false, error: "No pudimos completar tu registro a la demo. Intenta de nuevo." };
   }
 
   return { ok: true };

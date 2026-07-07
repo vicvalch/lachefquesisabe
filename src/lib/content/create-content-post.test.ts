@@ -131,7 +131,10 @@ describe("createContentPost", () => {
 
     const result = await createContentPost(client, "user-1", validInput);
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No se pudo crear el contenido. Intenta de nuevo.",
+    });
   });
 
   it("devuelve un mensaje amigable ante una colisión de slug en el insert", async () => {

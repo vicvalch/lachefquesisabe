@@ -20,7 +20,7 @@ export async function cancelOutreachCampaign(
     .eq("id", campaignId);
 
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: "No pudimos cancelar la campaña. Intenta de nuevo." };
   }
 
   return { ok: true };

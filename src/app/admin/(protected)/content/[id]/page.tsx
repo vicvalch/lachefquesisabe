@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getContentPostById } from "@/lib/content/queries";
 import { listCategories } from "@/lib/content/categories";
 import { ContentPostForm } from "@/components/admin/ContentPostForm";
+import { EntityNotFoundCard } from "@/components/admin/EntityNotFoundCard";
 import { Card } from "@/components/ui/Card";
 
 export const metadata = {
@@ -20,7 +20,14 @@ export default async function ContentPostDetailPage({
   const post = await getContentPostById(supabase, id);
 
   if (!post) {
-    notFound();
+    return (
+      <EntityNotFoundCard
+        title="No encontramos este contenido"
+        description="Puede haber sido eliminado o el enlace no es correcto."
+        backHref="/admin/content"
+        backLabel="Volver a contenido"
+      />
+    );
   }
 
   const categories = await listCategories(supabase);

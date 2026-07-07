@@ -59,6 +59,9 @@ describe("updateLeadSegment", () => {
       buildInput(),
     );
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No pudimos guardar el segmento. Intenta de nuevo.",
+    });
   });
 });

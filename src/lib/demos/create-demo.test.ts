@@ -66,7 +66,10 @@ describe("createDemoEvent", () => {
 
     const result = await createDemoEvent(client, "user-1", validInput);
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No se pudo crear la demo. Intenta de nuevo.",
+    });
   });
 
   it("devuelve un mensaje amigable ante una colisión de slug", async () => {

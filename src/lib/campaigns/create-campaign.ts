@@ -46,7 +46,7 @@ export async function createOutreachCampaign(
         error: "Ya existe una campaña con ese identificador. Intenta de nuevo.",
       };
     }
-    return { ok: false, error: error?.message ?? "No se pudo crear la campaña." };
+    return { ok: false, error: "No se pudo crear la campaña. Intenta de nuevo." };
   }
 
   return { ok: true, id: data.id };

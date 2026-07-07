@@ -21,7 +21,8 @@ export function LeadCampaignMemberships({
   if (memberships.length === 0) {
     return (
       <p className="rounded-2xl border border-dashed border-ink/20 p-4 text-center text-sm text-ink-soft">
-        Este lead todavía no fue destinatario de ninguna campaña manual.
+        Este lead todavía no aparece en ninguna campaña. Cuando generés
+        tareas desde una campaña manual, el historial aparecerá acá.
       </p>
     );
   }

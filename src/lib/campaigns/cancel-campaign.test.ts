@@ -22,6 +22,9 @@ describe("cancelOutreachCampaign", () => {
 
     const result = await cancelOutreachCampaign({ from } as never, "campaign-1");
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No pudimos cancelar la campaña. Intenta de nuevo.",
+    });
   });
 });

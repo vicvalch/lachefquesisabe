@@ -59,6 +59,9 @@ describe("createLeadSegment", () => {
 
     const result = await createLeadSegment({ from } as never, null, buildInput());
 
-    expect(result).toEqual({ ok: false, error: "db down" });
+    expect(result).toEqual({
+      ok: false,
+      error: "No se pudo crear el segmento. Intenta de nuevo.",
+    });
   });
 });
