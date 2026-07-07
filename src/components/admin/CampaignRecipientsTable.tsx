@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { formatDateTime } from "@/lib/utils";
-import { TASK_STATUS_LABELS } from "@/lib/validations/follow-up-task";
+import { CAMPAIGN_RECIPIENT_STATUS_LABELS } from "@/lib/validations/outreach-campaign";
 import type { CampaignRecipientWithLead } from "@/lib/campaigns/queries";
 
 export function CampaignRecipientsTable({
@@ -11,7 +11,7 @@ export function CampaignRecipientsTable({
   if (recipients.length === 0) {
     return (
       <p className="rounded-2xl border border-dashed border-ink/20 p-6 text-center text-sm text-ink-soft">
-        Todavía no se generaron tareas para esta campaña.
+        Todavía no hay destinatarios materializados para esta campaña.
       </p>
     );
   }
@@ -22,8 +22,9 @@ export function CampaignRecipientsTable({
         <thead className="bg-cream-dark/50 text-left text-xs font-semibold uppercase tracking-wide text-ink-soft">
           <tr>
             <th className="px-4 py-3">Lead</th>
+            <th className="px-4 py-3">Estado</th>
             <th className="px-4 py-3">Tarea</th>
-            <th className="px-4 py-3">Generada</th>
+            <th className="px-4 py-3">Agregado</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-ink/10">
@@ -38,11 +39,13 @@ export function CampaignRecipientsTable({
                 </Link>
               </td>
               <td className="px-4 py-3 text-ink-soft">
-                {recipient.task
-                  ? `${TASK_STATUS_LABELS[recipient.task.status]} · ${formatDateTime(
-                      recipient.task.due_at,
-                    )}`
-                  : "—"}
+                {CAMPAIGN_RECIPIENT_STATUS_LABELS[recipient.status]}
+                {recipient.skip_reason && (
+                  <p className="mt-0.5 text-xs">{recipient.skip_reason}</p>
+                )}
+              </td>
+              <td className="px-4 py-3 text-ink-soft">
+                {recipient.task ? formatDateTime(recipient.task.due_at) : "—"}
               </td>
               <td className="px-4 py-3 text-ink-soft">
                 {formatDateTime(recipient.created_at)}

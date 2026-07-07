@@ -1,65 +1,82 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import { getOutreachCampaignById } from "@/lib/campaigns/queries";
-import { getLeadSegmentById, listLeadsMatchingSegment } from "@/lib/segments/queries";
+import { getMessageTemplateById } from "@/lib/message-templates/queries";
 
-export type GenerateCampaignTasksResult =
+export type GenerateFollowUpTasksForCampaignResult =
   | { ok: true; createdCount: number; skippedCount: number }
   | { ok: false; error: string };
 
+const NON_ADVANCING_STATUSES = new Set(["tasks_created", "completed", "cancelled"]);
+
 /**
- * Genera una follow_up_task (source = 'campaign') por cada lead del
- * segmento de la campaña que todavía no la tenga. Idempotente: los leads
- * ya registrados en outreach_campaign_recipients se saltan, así que
- * volver a correrlo solo alcanza a los leads que entraron al segmento
- * después de la última vez.
+ * Paso 2 del flujo manual: crea una follow_up_task (source = 'campaign')
+ * por cada destinatario todavía 'selected' de esta campaña. Nunca recibe
+ * un lead_id por parámetro ni vuelve a calcular el segmento: los
+ * destinatarios ya quedaron fijados en outreach_campaign_recipients por
+ * materializeCampaignRecipients (paso 1) — esta función solo lee esa
+ * tabla. No envía mensajes ni crea contact_logs.
+ *
+ * Idempotente: filtra por status = 'selected' AND follow_up_task_id is
+ * null, así que un recipient que ya tiene tarea (status 'task_created')
+ * nunca se vuelve a tocar ni genera una tarea duplicada.
  */
-export async function generateCampaignTasks(
+export async function generateFollowUpTasksForCampaign(
   supabase: SupabaseClient<Database>,
   campaignId: string,
-  dueAt: string,
   createdBy: string | null,
-): Promise<GenerateCampaignTasksResult> {
+): Promise<GenerateFollowUpTasksForCampaignResult> {
   const campaign = await getOutreachCampaignById(supabase, campaignId);
   if (!campaign) {
     return { ok: false, error: "No se encontró la campaña." };
   }
 
-  const segment = await getLeadSegmentById(supabase, campaign.segment_id);
-  if (!segment) {
-    return { ok: false, error: "No se encontró el segmento de esta campaña." };
-  }
+  const messageTemplate = campaign.message_template_id
+    ? await getMessageTemplateById(supabase, campaign.message_template_id)
+    : null;
 
-  const matchingLeads = await listLeadsMatchingSegment(supabase, segment);
-
-  const { data: existingRecipients, error: recipientsError } = await supabase
+  const { data: selectedRecipients, error: recipientsError } = await supabase
     .from("outreach_campaign_recipients")
-    .select("lead_id")
-    .eq("campaign_id", campaignId);
+    .select("id, lead_id")
+    .eq("campaign_id", campaignId)
+    .eq("status", "selected")
+    .is("follow_up_task_id", null);
 
   if (recipientsError) {
     return { ok: false, error: recipientsError.message };
   }
 
-  const existingLeadIds = new Set(
-    (existingRecipients ?? []).map((recipient) => recipient.lead_id),
-  );
-  const newLeads = matchingLeads.filter((lead) => !existingLeadIds.has(lead.id));
+  const { count: alreadyCreatedCount, error: countError } = await supabase
+    .from("outreach_campaign_recipients")
+    .select("id", { count: "exact", head: true })
+    .eq("campaign_id", campaignId)
+    .eq("status", "task_created");
 
-  if (newLeads.length === 0) {
-    return { ok: true, createdCount: 0, skippedCount: matchingLeads.length };
+  if (countError) {
+    return { ok: false, error: countError.message };
   }
+
+  const recipients = selectedRecipients ?? [];
+  const skippedCount = alreadyCreatedCount ?? 0;
+
+  if (recipients.length === 0) {
+    return { ok: true, createdCount: 0, skippedCount };
+  }
+
+  const taskTitle = campaign.task_title || `Contactar: ${campaign.name}`;
+  const dueAt = campaign.due_at ?? new Date().toISOString();
 
   const { data: insertedTasks, error: tasksError } = await supabase
     .from("follow_up_tasks")
     .insert(
-      newLeads.map((lead) => ({
-        lead_id: lead.id,
+      recipients.map((recipient) => ({
+        lead_id: recipient.lead_id,
         campaign_id: campaignId,
-        title: `Campaña: ${campaign.name}`,
-        message_template_key: campaign.message_template_key,
+        title: taskTitle,
+        message_template_key: messageTemplate?.key ?? null,
         due_at: dueAt,
         source: "campaign" as const,
+        notes: campaign.task_notes,
         created_by: createdBy,
       })),
     )
@@ -72,23 +89,40 @@ export async function generateCampaignTasks(
     };
   }
 
-  const { error: recipientsInsertError } = await supabase
-    .from("outreach_campaign_recipients")
-    .insert(
-      insertedTasks.map((task) => ({
-        campaign_id: campaignId,
-        lead_id: task.lead_id,
-        follow_up_task_id: task.id,
-      })),
-    );
+  const taskIdByLeadId = new Map(insertedTasks.map((task) => [task.lead_id, task.id]));
 
-  if (recipientsInsertError) {
-    return { ok: false, error: recipientsInsertError.message };
+  const updateResults = await Promise.all(
+    recipients.map((recipient) => {
+      const taskId = taskIdByLeadId.get(recipient.lead_id);
+      if (!taskId) {
+        return Promise.resolve({ error: null });
+      }
+      return supabase
+        .from("outreach_campaign_recipients")
+        .update({ status: "task_created", follow_up_task_id: taskId })
+        .eq("id", recipient.id);
+    }),
+  );
+
+  const updateError = updateResults.find((result) => result.error)?.error;
+  if (updateError) {
+    return { ok: false, error: updateError.message };
+  }
+
+  if (!NON_ADVANCING_STATUSES.has(campaign.status)) {
+    const { error: statusError } = await supabase
+      .from("outreach_campaigns")
+      .update({ status: "tasks_created" })
+      .eq("id", campaignId);
+
+    if (statusError) {
+      return { ok: false, error: statusError.message };
+    }
   }
 
   return {
     ok: true,
     createdCount: insertedTasks.length,
-    skippedCount: matchingLeads.length - insertedTasks.length,
+    skippedCount,
   };
 }

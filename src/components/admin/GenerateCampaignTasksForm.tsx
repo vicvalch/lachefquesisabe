@@ -5,18 +5,22 @@ import {
   generateCampaignTasksAction,
   type GenerateCampaignTasksState,
 } from "@/lib/actions/campaigns";
-import { Field } from "@/components/ui/Field";
-import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
 const initialState: GenerateCampaignTasksState = {};
 
+/**
+ * Paso 2 del flujo manual: crea una follow_up_task por cada destinatario
+ * 'selected' de la campaña. La fecha y el resto de la configuración de la
+ * tarea ya quedaron fijadas al crear la campaña (task_title, task_notes,
+ * due_at); acá no hace falta pedir nada más.
+ */
 export function GenerateCampaignTasksForm({
   campaignId,
-  newLeadsCount,
+  pendingCount,
 }: {
   campaignId: string;
-  newLeadsCount: number;
+  pendingCount: number;
 }) {
   const [state, formAction, pending] = useActionState(
     generateCampaignTasksAction,
@@ -24,16 +28,8 @@ export function GenerateCampaignTasksForm({
   );
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} className="flex flex-col gap-3">
       <input type="hidden" name="campaignId" value={campaignId} />
-
-      <Field
-        label="Fecha del seguimiento"
-        htmlFor="due_at"
-        hint="Cuándo debería aparecer la tarea en el Centro de Seguimientos"
-      >
-        <Input id="due_at" name="due_at" type="datetime-local" required />
-      </Field>
 
       {state.error && (
         <p className="text-sm font-medium text-brand-700" role="alert">
@@ -48,14 +44,14 @@ export function GenerateCampaignTasksForm({
 
       <Button
         type="submit"
-        disabled={pending || newLeadsCount === 0}
+        disabled={pending || pendingCount === 0}
         className="self-start"
       >
         {pending
           ? "Generando..."
-          : newLeadsCount > 0
-            ? `Generar ${newLeadsCount} tareas de seguimiento`
-            : "No hay leads nuevos para generar"}
+          : pendingCount > 0
+            ? `Generar ${pendingCount} tareas de seguimiento`
+            : "No hay destinatarios pendientes"}
       </Button>
     </form>
   );

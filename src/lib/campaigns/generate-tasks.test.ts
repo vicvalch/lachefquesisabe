@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { generateCampaignTasks } from "./generate-tasks";
-import type { LeadRow, LeadSegmentRow, OutreachCampaignRow } from "@/types/database";
+import { generateFollowUpTasksForCampaign } from "./generate-tasks";
+import type { MessageTemplateRow, OutreachCampaignRow } from "@/types/database";
 
 function buildCampaign(overrides: Partial<OutreachCampaignRow> = {}): OutreachCampaignRow {
   return {
@@ -9,56 +9,39 @@ function buildCampaign(overrides: Partial<OutreachCampaignRow> = {}): OutreachCa
     updated_at: new Date(0).toISOString(),
     created_by: null,
     segment_id: "segment-1",
-    message_template_key: "recontacto-suave",
+    message_template_id: "template-1",
     name: "Campaña de julio",
-    notes: null,
+    slug: "campana-de-julio-abc12345",
+    description: null,
+    status: "ready",
+    task_type: "whatsapp",
+    task_priority: "medium",
+    task_title: null,
+    task_notes: "Contactar con cuidado",
+    due_at: "2026-08-01T10:00:00.000Z",
     ...overrides,
   };
 }
 
-function buildSegment(overrides: Partial<LeadSegmentRow> = {}): LeadSegmentRow {
+function buildTemplate(overrides: Partial<MessageTemplateRow> = {}): MessageTemplateRow {
   return {
-    id: "segment-1",
+    id: "template-1",
     created_at: new Date(0).toISOString(),
     updated_at: new Date(0).toISOString(),
-    created_by: null,
-    name: "Segmento de prueba",
-    description: null,
-    filter_statuses: [],
-    filter_primary_interests: [],
-    filter_source: null,
-    filter_created_after: null,
-    filter_created_before: null,
-    filter_has_open_task: null,
-    ...overrides,
-  };
-}
-
-function buildLead(overrides: Partial<LeadRow> = {}): LeadRow {
-  return {
-    id: overrides.id ?? "lead-1",
-    created_at: new Date(0).toISOString(),
-    name: "Ana Pérez",
-    email: "ana@example.com",
-    phone: "88888888",
-    primary_interest: "easy_recipes",
-    message: null,
-    status: "new",
-    source: "landing",
-    consent_contact: true,
-    notes: null,
-    next_follow_up_at: null,
-    last_contacted_at: null,
+    key: "recontacto-suave",
+    label: "Recontacto suave",
+    body: "Hola {{name}}",
+    is_active: true,
     ...overrides,
   };
 }
 
 /**
- * Cada tabla puede recibir varias llamadas a `from` durante el flujo
- * (por ejemplo outreach_campaign_recipients: primero un select, luego un
- * insert); `sequences[table]` es un arreglo consumido en orden de llamada.
+ * Cada tabla puede recibir varias llamadas durante el flujo; `sequences[table]`
+ * es un arreglo consumido en orden (el último valor se reutiliza si hay
+ * más llamadas que entradas, útil para las N actualizaciones de recipients).
  */
-function buildMock(sequences: Record<string, { data: unknown; error: unknown }[]>) {
+function buildMock(sequences: Record<string, { data: unknown; error: unknown; count?: number }[]>) {
   const callIndex: Record<string, number> = {};
   const calls: Record<string, unknown[][]> = {};
 
@@ -70,7 +53,7 @@ function buildMock(sequences: Record<string, { data: unknown; error: unknown }[]
     const result = seq[Math.min(idx, seq.length - 1)];
 
     const builder: Record<string, unknown> = {};
-    for (const method of ["select", "eq", "order", "limit", "in", "insert"]) {
+    for (const method of ["select", "eq", "is", "order", "limit", "in", "insert", "update"]) {
       builder[method] = vi.fn((...args: unknown[]) => {
         const key = `${table}.${method}`;
         calls[key] = calls[key] ?? [];
@@ -79,7 +62,6 @@ function buildMock(sequences: Record<string, { data: unknown; error: unknown }[]
       });
     }
     builder.maybeSingle = vi.fn(() => Promise.resolve(result));
-    builder.single = vi.fn(() => Promise.resolve(result));
     (builder as { then: unknown }).then = (
       resolve: (value: typeof result) => void,
     ) => resolve(result);
@@ -90,78 +72,133 @@ function buildMock(sequences: Record<string, { data: unknown; error: unknown }[]
   return { client: { from } as never, calls };
 }
 
-describe("generateCampaignTasks", () => {
-  it("crea tareas solo para los leads nuevos y las registra como recipients", async () => {
-    const lead1 = buildLead({ id: "lead-1" });
-    const lead2 = buildLead({ id: "lead-2" });
+describe("generateFollowUpTasksForCampaign", () => {
+  it("crea follow_up_tasks desde los recipients 'selected' y actualiza cada uno a task_created con su follow_up_task_id", async () => {
     const { client, calls } = buildMock({
       outreach_campaigns: [{ data: buildCampaign(), error: null }],
-      lead_segments: [{ data: buildSegment(), error: null }],
-      leads: [{ data: [lead1, lead2], error: null }],
+      message_templates: [{ data: buildTemplate(), error: null }],
       outreach_campaign_recipients: [
-        { data: [{ lead_id: "lead-1" }], error: null },
+        {
+          data: [
+            { id: "recipient-1", lead_id: "lead-1" },
+            { id: "recipient-2", lead_id: "lead-2" },
+          ],
+          error: null,
+        },
+        { data: null, error: null, count: 0 },
         { data: null, error: null },
       ],
       follow_up_tasks: [
-        { data: [{ id: "task-2", lead_id: "lead-2" }], error: null },
+        {
+          data: [
+            { id: "task-1", lead_id: "lead-1" },
+            { id: "task-2", lead_id: "lead-2" },
+          ],
+          error: null,
+        },
       ],
     });
 
-    const result = await generateCampaignTasks(
-      client,
-      "campaign-1",
-      "2026-08-01T10:00:00.000Z",
-      "user-1",
-    );
+    const result = await generateFollowUpTasksForCampaign(client, "campaign-1", "user-1");
 
-    expect(result).toEqual({ ok: true, createdCount: 1, skippedCount: 1 });
-    expect(calls["follow_up_tasks.insert"]).toEqual([
-      [
-        [
-          {
-            lead_id: "lead-2",
-            campaign_id: "campaign-1",
-            title: "Campaña: Campaña de julio",
-            message_template_key: "recontacto-suave",
-            due_at: "2026-08-01T10:00:00.000Z",
-            source: "campaign",
-            created_by: "user-1",
-          },
-        ],
-      ],
+    expect(result).toEqual({ ok: true, createdCount: 2, skippedCount: 0 });
+
+    expect(calls["outreach_campaign_recipients.eq"]).toContainEqual(["status", "selected"]);
+    expect(calls["outreach_campaign_recipients.is"]).toContainEqual([
+      "follow_up_task_id",
+      null,
     ]);
-    expect(calls["outreach_campaign_recipients.insert"]).toEqual([
-      [
-        [
-          {
-            campaign_id: "campaign-1",
-            lead_id: "lead-2",
-            follow_up_task_id: "task-2",
-          },
-        ],
-      ],
+
+    expect(calls["follow_up_tasks.insert"][0][0]).toEqual([
+      {
+        lead_id: "lead-1",
+        campaign_id: "campaign-1",
+        title: "Contactar: Campaña de julio",
+        message_template_key: "recontacto-suave",
+        due_at: "2026-08-01T10:00:00.000Z",
+        source: "campaign",
+        notes: "Contactar con cuidado",
+        created_by: "user-1",
+      },
+      {
+        lead_id: "lead-2",
+        campaign_id: "campaign-1",
+        title: "Contactar: Campaña de julio",
+        message_template_key: "recontacto-suave",
+        due_at: "2026-08-01T10:00:00.000Z",
+        source: "campaign",
+        notes: "Contactar con cuidado",
+        created_by: "user-1",
+      },
+    ]);
+
+    expect(calls["outreach_campaign_recipients.update"]).toContainEqual([
+      { status: "task_created", follow_up_task_id: "task-1" },
+    ]);
+    expect(calls["outreach_campaign_recipients.update"]).toContainEqual([
+      { status: "task_created", follow_up_task_id: "task-2" },
     ]);
   });
 
-  it("cuando todos los leads del segmento ya tienen tarea, no inserta nada", async () => {
-    const lead1 = buildLead({ id: "lead-1" });
-    const { client } = buildMock({
-      outreach_campaigns: [{ data: buildCampaign(), error: null }],
-      lead_segments: [{ data: buildSegment(), error: null }],
-      leads: [{ data: [lead1], error: null }],
+  it("cambia campaign.status a tasks_created", async () => {
+    const { client, calls } = buildMock({
+      outreach_campaigns: [{ data: buildCampaign({ status: "ready" }), error: null }],
+      message_templates: [{ data: buildTemplate(), error: null }],
       outreach_campaign_recipients: [
-        { data: [{ lead_id: "lead-1" }], error: null },
+        { data: [{ id: "recipient-1", lead_id: "lead-1" }], error: null },
+        { data: null, error: null, count: 0 },
+        { data: null, error: null },
+      ],
+      follow_up_tasks: [
+        { data: [{ id: "task-1", lead_id: "lead-1" }], error: null },
       ],
     });
 
-    const result = await generateCampaignTasks(
-      client,
-      "campaign-1",
-      "2026-08-01T10:00:00.000Z",
-      "user-1",
-    );
+    await generateFollowUpTasksForCampaign(client, "campaign-1", null);
 
-    expect(result).toEqual({ ok: true, createdCount: 0, skippedCount: 1 });
+    expect(calls["outreach_campaigns.update"]).toEqual([[{ status: "tasks_created" }]]);
+  });
+
+  it("no duplica tareas: si no hay recipients 'selected' sin tarea, no llama a follow_up_tasks.insert", async () => {
+    const { client, calls } = buildMock({
+      outreach_campaigns: [{ data: buildCampaign(), error: null }],
+      message_templates: [{ data: buildTemplate(), error: null }],
+      outreach_campaign_recipients: [
+        { data: [], error: null },
+        { data: null, error: null, count: 3 },
+      ],
+    });
+
+    const result = await generateFollowUpTasksForCampaign(client, "campaign-1", null);
+
+    expect(result).toEqual({ ok: true, createdCount: 0, skippedCount: 3 });
+    expect(calls["follow_up_tasks.insert"]).toBeUndefined();
+    expect(calls["outreach_campaigns.update"]).toBeUndefined();
+  });
+
+  it("solo lee de outreach_campaign_recipients: nunca recalcula el segmento ni acepta un lead_id por parámetro", async () => {
+    // No se provee "lead_segments" ni "leads" en el mock: si la función
+    // intentara volver a calcular el segmento (en vez de leer los
+    // recipients ya materializados), este test fallaría con "Tabla
+    // inesperada". La firma de generateFollowUpTasksForCampaign tampoco
+    // acepta ningún lead_id/lista de leads como argumento.
+    const { client } = buildMock({
+      outreach_campaigns: [{ data: buildCampaign(), error: null }],
+      message_templates: [{ data: buildTemplate(), error: null }],
+      outreach_campaign_recipients: [
+        { data: [{ id: "recipient-1", lead_id: "lead-1" }], error: null },
+        { data: null, error: null, count: 0 },
+        { data: null, error: null },
+      ],
+      follow_up_tasks: [
+        { data: [{ id: "task-1", lead_id: "lead-1" }], error: null },
+      ],
+    });
+
+    const result = await generateFollowUpTasksForCampaign(client, "campaign-1", null);
+
+    expect(result.ok).toBe(true);
+    expect(generateFollowUpTasksForCampaign.length).toBe(3);
   });
 
   it("devuelve error si la campaña no existe", async () => {
@@ -169,52 +206,8 @@ describe("generateCampaignTasks", () => {
       outreach_campaigns: [{ data: null, error: null }],
     });
 
-    const result = await generateCampaignTasks(
-      client,
-      "campaign-missing",
-      "2026-08-01T10:00:00.000Z",
-      null,
-    );
+    const result = await generateFollowUpTasksForCampaign(client, "missing", null);
 
     expect(result).toEqual({ ok: false, error: "No se encontró la campaña." });
-  });
-
-  it("devuelve error si el segmento de la campaña ya no existe", async () => {
-    const { client } = buildMock({
-      outreach_campaigns: [{ data: buildCampaign(), error: null }],
-      lead_segments: [{ data: null, error: null }],
-    });
-
-    const result = await generateCampaignTasks(
-      client,
-      "campaign-1",
-      "2026-08-01T10:00:00.000Z",
-      null,
-    );
-
-    expect(result).toEqual({
-      ok: false,
-      error: "No se encontró el segmento de esta campaña.",
-    });
-  });
-
-  it("propaga el error si falla la inserción de tareas", async () => {
-    const lead1 = buildLead({ id: "lead-1" });
-    const { client } = buildMock({
-      outreach_campaigns: [{ data: buildCampaign(), error: null }],
-      lead_segments: [{ data: buildSegment(), error: null }],
-      leads: [{ data: [lead1], error: null }],
-      outreach_campaign_recipients: [{ data: [], error: null }],
-      follow_up_tasks: [{ data: null, error: { message: "insert failed" } }],
-    });
-
-    const result = await generateCampaignTasks(
-      client,
-      "campaign-1",
-      "2026-08-01T10:00:00.000Z",
-      null,
-    );
-
-    expect(result).toEqual({ ok: false, error: "insert failed" });
   });
 });

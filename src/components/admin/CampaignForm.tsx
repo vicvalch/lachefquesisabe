@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
+import { CONTACT_CHANNEL_OPTIONS } from "@/lib/validations/contact-log";
+import { CAMPAIGN_TASK_PRIORITY_OPTIONS } from "@/lib/validations/outreach-campaign";
 import type { LeadSegmentRow, MessageTemplateRow } from "@/types/database";
 
 const initialState: CreateOutreachCampaignState = {};
@@ -52,15 +54,15 @@ export function CampaignForm({
 
       <Field
         label="Plantilla de mensaje"
-        htmlFor="message_template_key"
+        htmlFor="message_template_id"
         hint="Se sugiere al generar cada tarea de seguimiento"
       >
-        <Select id="message_template_key" name="message_template_key" required defaultValue="">
+        <Select id="message_template_id" name="message_template_id" required defaultValue="">
           <option value="" disabled>
             Selecciona una plantilla
           </option>
           {activeTemplates.map((template) => (
-            <option key={template.key} value={template.key}>
+            <option key={template.id} value={template.id}>
               {template.label}
             </option>
           ))}
@@ -76,8 +78,54 @@ export function CampaignForm({
         />
       </Field>
 
-      <Field label="Notas (opcional)" htmlFor="notes">
-        <Textarea id="notes" name="notes" rows={3} />
+      <Field label="Descripción (opcional)" htmlFor="description">
+        <Textarea id="description" name="description" rows={2} />
+      </Field>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Canal sugerido" htmlFor="task_type">
+          <Select id="task_type" name="task_type" defaultValue="whatsapp">
+            {CONTACT_CHANNEL_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <Field label="Prioridad de la tarea" htmlFor="task_priority">
+          <Select id="task_priority" name="task_priority" defaultValue="medium">
+            {CAMPAIGN_TASK_PRIORITY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </div>
+
+      <Field
+        label="Título de la tarea (opcional)"
+        htmlFor="task_title"
+        hint="Si se deja vacío, se usa 'Contactar: <nombre de la campaña>'"
+      >
+        <Input id="task_title" name="task_title" placeholder="Ej: Llamar para confirmar interés" />
+      </Field>
+
+      <Field
+        label="Notas de la tarea (opcional)"
+        htmlFor="task_notes"
+        hint="Se copian tal cual en cada tarea generada"
+      >
+        <Textarea id="task_notes" name="task_notes" rows={2} />
+      </Field>
+
+      <Field
+        label="Fecha sugerida (opcional)"
+        htmlFor="due_at"
+        hint="Si se deja vacío, las tareas se generan con fecha de hoy"
+      >
+        <Input id="due_at" name="due_at" type="datetime-local" />
       </Field>
 
       {segments.length === 0 && (

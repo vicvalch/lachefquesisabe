@@ -77,6 +77,47 @@ export type TaskSource =
   | "manual"
   | "campaign";
 
+export type CampaignStatus =
+  | "draft"
+  | "ready"
+  | "tasks_created"
+  | "completed"
+  | "cancelled";
+
+export type CampaignTaskPriority = "low" | "medium" | "high";
+
+export type CampaignRecipientStatus =
+  | "selected"
+  | "task_created"
+  | "skipped"
+  | "cancelled";
+
+/**
+ * Criterio de filtros de un segmento (lead_segments.criteria, jsonb).
+ * Todas las keys son opcionales (criterio vacío = todos los leads); las
+ * únicas permitidas son las de acá — leadSegmentCriteriaSchema
+ * (src/lib/validations/lead-segment.ts) es `.strict()` y rechaza
+ * cualquier otra. listLeadsMatchingCriteria (src/lib/segments/queries.ts)
+ * las combina siempre con AND.
+ */
+export interface LeadSegmentCriteria {
+  statuses?: LeadStatus[];
+  primary_interests?: PrimaryInterest[];
+  sources?: string[];
+  consent_contact?: boolean;
+  created_from?: string;
+  created_to?: string;
+  last_contacted_before?: string;
+  last_contacted_after?: string;
+  next_follow_up_before?: string;
+  next_follow_up_after?: string;
+  has_open_follow_up_task?: boolean;
+  demo_event_id?: string;
+  demo_attendance_statuses?: AttendanceStatus[];
+  content_post_id?: string;
+  search?: string;
+}
+
 export type LeadRow = {
   id: string;
   created_at: string;
@@ -408,12 +449,7 @@ export type LeadSegmentRow = {
   created_by: string | null;
   name: string;
   description: string | null;
-  filter_statuses: LeadStatus[];
-  filter_primary_interests: PrimaryInterest[];
-  filter_source: string | null;
-  filter_created_after: string | null;
-  filter_created_before: string | null;
-  filter_has_open_task: boolean | null;
+  criteria: LeadSegmentCriteria;
 };
 
 export type LeadSegmentInsert = {
@@ -423,23 +459,13 @@ export type LeadSegmentInsert = {
   created_by?: string | null;
   name: string;
   description?: string | null;
-  filter_statuses?: LeadStatus[];
-  filter_primary_interests?: PrimaryInterest[];
-  filter_source?: string | null;
-  filter_created_after?: string | null;
-  filter_created_before?: string | null;
-  filter_has_open_task?: boolean | null;
+  criteria?: LeadSegmentCriteria;
 };
 
 export type LeadSegmentUpdate = {
   name?: string;
   description?: string | null;
-  filter_statuses?: LeadStatus[];
-  filter_primary_interests?: PrimaryInterest[];
-  filter_source?: string | null;
-  filter_created_after?: string | null;
-  filter_created_before?: string | null;
-  filter_has_open_task?: boolean | null;
+  criteria?: LeadSegmentCriteria;
 };
 
 export type OutreachCampaignRow = {
@@ -448,9 +474,16 @@ export type OutreachCampaignRow = {
   updated_at: string;
   created_by: string | null;
   segment_id: string;
-  message_template_key: string | null;
+  message_template_id: string | null;
   name: string;
-  notes: string | null;
+  slug: string;
+  description: string | null;
+  status: CampaignStatus;
+  task_type: ContactChannel;
+  task_priority: CampaignTaskPriority;
+  task_title: string | null;
+  task_notes: string | null;
+  due_at: string | null;
 };
 
 export type OutreachCampaignInsert = {
@@ -459,31 +492,56 @@ export type OutreachCampaignInsert = {
   updated_at?: string;
   created_by?: string | null;
   segment_id: string;
-  message_template_key?: string | null;
+  message_template_id?: string | null;
   name: string;
-  notes?: string | null;
+  slug: string;
+  description?: string | null;
+  status?: CampaignStatus;
+  task_type?: ContactChannel;
+  task_priority?: CampaignTaskPriority;
+  task_title?: string | null;
+  task_notes?: string | null;
+  due_at?: string | null;
 };
 
 export type OutreachCampaignUpdate = {
-  message_template_key?: string | null;
+  message_template_id?: string | null;
   name?: string;
-  notes?: string | null;
+  description?: string | null;
+  status?: CampaignStatus;
+  task_type?: ContactChannel;
+  task_priority?: CampaignTaskPriority;
+  task_title?: string | null;
+  task_notes?: string | null;
+  due_at?: string | null;
 };
 
 export type OutreachCampaignRecipientRow = {
   id: string;
   created_at: string;
+  updated_at: string;
   campaign_id: string;
   lead_id: string;
   follow_up_task_id: string | null;
+  status: CampaignRecipientStatus;
+  skip_reason: string | null;
 };
 
 export type OutreachCampaignRecipientInsert = {
   id?: string;
   created_at?: string;
+  updated_at?: string;
   campaign_id: string;
   lead_id: string;
   follow_up_task_id?: string | null;
+  status?: CampaignRecipientStatus;
+  skip_reason?: string | null;
+};
+
+export type OutreachCampaignRecipientUpdate = {
+  follow_up_task_id?: string | null;
+  status?: CampaignRecipientStatus;
+  skip_reason?: string | null;
 };
 
 export type Database = {
@@ -552,7 +610,7 @@ export type Database = {
       outreach_campaign_recipients: {
         Row: OutreachCampaignRecipientRow;
         Insert: OutreachCampaignRecipientInsert;
-        Update: Partial<OutreachCampaignRecipientInsert>;
+        Update: OutreachCampaignRecipientUpdate;
         Relationships: [];
       };
     };

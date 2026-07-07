@@ -13,11 +13,6 @@ export interface OutreachCampaignWithSegment extends OutreachCampaignRow {
   recipientsCount: number;
 }
 
-/**
- * Una campaña no tiene columna de estado: "borrador" (todavía sin tareas
- * generadas) vs "enviada" se deriva de si ya tiene destinatarios, para no
- * mantener dos fuentes de verdad sincronizadas (ver 0007_lead_segments_campaigns.sql).
- */
 export async function listOutreachCampaigns(
   supabase: SupabaseClient<Database>,
 ): Promise<OutreachCampaignWithSegment[]> {
@@ -67,6 +62,18 @@ export async function listOutreachCampaignsForSegment(
 ): Promise<OutreachCampaignWithSegment[]> {
   const campaigns = await listOutreachCampaigns(supabase);
   return campaigns.filter((campaign) => campaign.segment_id === segmentId);
+}
+
+/**
+ * Campañas más recientes, para el widget del dashboard. `listOutreachCampaigns`
+ * ya ordena por created_at desc; acá solo se acota el tamaño.
+ */
+export async function listRecentOutreachCampaigns(
+  supabase: SupabaseClient<Database>,
+  limit = 5,
+): Promise<OutreachCampaignWithSegment[]> {
+  const campaigns = await listOutreachCampaigns(supabase);
+  return campaigns.slice(0, limit);
 }
 
 export async function getOutreachCampaignById(
@@ -140,4 +147,56 @@ export async function listCampaignRecipients(
       return { ...recipient, lead, task };
     })
     .filter((recipient): recipient is CampaignRecipientWithLead => recipient !== null);
+}
+
+export interface LeadCampaignMembership {
+  campaign: OutreachCampaignRow;
+  recipientStatus: OutreachCampaignRecipientRow["status"];
+  createdAt: string;
+}
+
+/**
+ * Últimas campañas donde este lead fue destinatario, para su detalle.
+ * `limit` (default 5) evita saturar la vista con historial viejo.
+ */
+export async function listCampaignsForLead(
+  supabase: SupabaseClient<Database>,
+  leadId: string,
+  limit = 5,
+): Promise<LeadCampaignMembership[]> {
+  const { data, error } = await supabase
+    .from("outreach_campaign_recipients")
+    .select("campaign_id, status, created_at")
+    .eq("lead_id", leadId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data || data.length === 0) {
+    return [];
+  }
+
+  const campaignIds = [...new Set(data.map((recipient) => recipient.campaign_id))];
+
+  const { data: campaigns, error: campaignsError } = await supabase
+    .from("outreach_campaigns")
+    .select("*")
+    .in("id", campaignIds);
+
+  if (campaignsError || !campaigns) {
+    return [];
+  }
+
+  const campaignsById = new Map(campaigns.map((campaign) => [campaign.id, campaign]));
+
+  return data
+    .map((recipient) => {
+      const campaign = campaignsById.get(recipient.campaign_id);
+      if (!campaign) return null;
+      return {
+        campaign,
+        recipientStatus: recipient.status,
+        createdAt: recipient.created_at,
+      };
+    })
+    .filter((membership): membership is LeadCampaignMembership => membership !== null);
 }

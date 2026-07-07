@@ -7,15 +7,20 @@ function buildInput(
 ): CreateOutreachCampaignInput {
   return {
     segment_id: "segment-1",
-    message_template_key: "recontacto-suave",
+    message_template_id: "template-1",
     name: "Recontacto interesados",
-    notes: "",
+    description: "",
+    task_type: "whatsapp",
+    task_priority: "medium",
+    task_title: "",
+    task_notes: "",
+    due_at: "",
     ...overrides,
   };
 }
 
 describe("createOutreachCampaign", () => {
-  it("inserta la campaña con created_by y los datos del formulario", async () => {
+  it("inserta la campaña en status draft con created_by, slug generado y los datos del formulario", async () => {
     const single = vi
       .fn()
       .mockResolvedValue({ data: { id: "campaign-1" }, error: null });
@@ -31,13 +36,22 @@ describe("createOutreachCampaign", () => {
 
     expect(result).toEqual({ ok: true, id: "campaign-1" });
     expect(from).toHaveBeenCalledWith("outreach_campaigns");
-    expect(insert).toHaveBeenCalledWith({
+    const payload = insert.mock.calls[0][0];
+    expect(payload).toMatchObject({
       created_by: "user-1",
       segment_id: "segment-1",
-      message_template_key: "recontacto-suave",
+      message_template_id: "template-1",
       name: "Recontacto interesados",
-      notes: null,
+      description: null,
+      status: "draft",
+      task_type: "whatsapp",
+      task_priority: "medium",
+      task_title: null,
+      task_notes: null,
+      due_at: null,
     });
+    expect(typeof payload.slug).toBe("string");
+    expect(payload.slug.length).toBeGreaterThan(0);
   });
 
   it("devuelve el error cuando Supabase falla", async () => {

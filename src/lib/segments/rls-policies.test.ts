@@ -54,7 +54,7 @@ describe("RLS de lead_segments, outreach_campaigns y outreach_campaign_recipient
     }
   });
 
-  it("outreach_campaign_recipients es append-only: solo lectura e inserción, sin update ni delete", () => {
+  it("outreach_campaign_recipients permite select/insert/update pero nunca delete (el historial de a quién se seleccionó no se borra)", () => {
     const section = migrationSql.split(
       "create table if not exists public.outreach_campaign_recipients",
     )[1];
@@ -64,7 +64,9 @@ describe("RLS de lead_segments, outreach_campaigns y outreach_campaign_recipient
     expect(section).toMatch(
       /"Authenticated can insert campaign recipients"[\s\S]*?for insert\s+to authenticated/,
     );
-    expect(section).not.toMatch(/for update/);
+    expect(section).toMatch(
+      /"Authenticated can update campaign recipients"[\s\S]*?for update\s+to authenticated/,
+    );
     expect(section).not.toMatch(/for delete/);
   });
 
@@ -72,6 +74,32 @@ describe("RLS de lead_segments, outreach_campaigns y outreach_campaign_recipient
     expect(migrationSql).toMatch(/drop type if exists task_source/);
     expect(migrationSql).toMatch(/'manual',\s*\n\s*'campaign'/);
     expect(migrationSql).not.toMatch(/alter type task_source add value/i);
+  });
+
+  it("lead_segments.criteria es jsonb con default '{}' y se exige que sea un objeto", () => {
+    expect(migrationSql).toMatch(/criteria jsonb not null default '\{\}'::jsonb/);
+    expect(migrationSql).toMatch(
+      /constraint lead_segments_criteria_is_object check \(jsonb_typeof\(criteria\) = 'object'\)/,
+    );
+  });
+
+  it("define los enums campaign_status, campaign_task_priority y campaign_recipient_status", () => {
+    expect(migrationSql).toMatch(
+      /create type campaign_status as enum \(\s*'draft',\s*'ready',\s*'tasks_created',\s*'completed',\s*'cancelled'\s*\)/,
+    );
+    expect(migrationSql).toMatch(
+      /create type campaign_task_priority as enum \('low', 'medium', 'high'\)/,
+    );
+    expect(migrationSql).toMatch(
+      /create type campaign_recipient_status as enum \(\s*'selected',\s*'task_created',\s*'skipped',\s*'cancelled'\s*\)/,
+    );
+  });
+
+  it("outreach_campaigns referencia message_templates por id (no por key) y arranca en status draft", () => {
+    expect(migrationSql).toMatch(
+      /message_template_id uuid references public\.message_templates \(id\) on delete set null/,
+    );
+    expect(migrationSql).toMatch(/status campaign_status not null default 'draft'/);
   });
 
   it("outreach_campaigns.segment_id borra en cascada, follow_up_tasks.campaign_id conserva la tarea", () => {
@@ -83,9 +111,12 @@ describe("RLS de lead_segments, outreach_campaigns y outreach_campaign_recipient
     );
   });
 
-  it("outreach_campaign_recipients evita duplicar destinatarios por campaña+lead", () => {
+  it("outreach_campaign_recipients evita duplicar destinatarios por campaña+lead y arranca en status selected", () => {
     expect(migrationSql).toMatch(
       /constraint outreach_campaign_recipients_unique_lead unique \(campaign_id, lead_id\)/,
+    );
+    expect(migrationSql).toMatch(
+      /status campaign_recipient_status not null default 'selected'/,
     );
   });
 });

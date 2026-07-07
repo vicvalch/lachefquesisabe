@@ -5,6 +5,7 @@ import { getLeadById, listContactLogs } from "@/lib/leads/queries";
 import { listFollowUpTasksForLead } from "@/lib/leads/follow-up-tasks-queries";
 import { listMessageTemplates } from "@/lib/message-templates/queries";
 import { getFollowUpSuggestion } from "@/lib/leads/follow-up-suggestions";
+import { listCampaignsForLead } from "@/lib/campaigns/queries";
 import { LeadInfoCard } from "@/components/admin/LeadInfoCard";
 import { LeadUpdateForm } from "@/components/admin/LeadUpdateForm";
 import { ContactLogForm } from "@/components/admin/ContactLogForm";
@@ -12,6 +13,7 @@ import { ContactLogTimeline } from "@/components/admin/ContactLogTimeline";
 import { MessageTemplatePicker } from "@/components/admin/MessageTemplatePicker";
 import { LeadFollowUpTasks } from "@/components/admin/LeadFollowUpTasks";
 import { ScheduleFollowUpForm } from "@/components/admin/ScheduleFollowUpForm";
+import { LeadCampaignMemberships } from "@/components/admin/LeadCampaignMemberships";
 import { Card } from "@/components/ui/Card";
 
 export const metadata = {
@@ -31,10 +33,11 @@ export default async function LeadDetailPage({
     notFound();
   }
 
-  const [contactLogs, tasks, templates] = await Promise.all([
+  const [contactLogs, tasks, templates, campaignMemberships] = await Promise.all([
     listContactLogs(supabase, lead.id),
     listFollowUpTasksForLead(supabase, lead.id),
     listMessageTemplates(supabase),
+    listCampaignsForLead(supabase, lead.id),
   ]);
 
   const openTasks = tasks.filter((task) => task.status === "open");
@@ -80,6 +83,18 @@ export default async function LeadDetailPage({
             </p>
             <div className="mt-4">
               <LeadFollowUpTasks lead={lead} tasks={tasks} templates={templates} />
+            </div>
+          </Card>
+
+          <Card>
+            <h2 className="font-display text-lg font-semibold text-ink">
+              Campañas
+            </h2>
+            <p className="mt-1 text-sm text-ink-soft">
+              Últimas 5 campañas manuales donde este lead fue destinatario.
+            </p>
+            <div className="mt-4">
+              <LeadCampaignMemberships memberships={campaignMemberships} />
             </div>
           </Card>
 

@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   listCampaignRecipients,
+  listCampaignsForLead,
   listOutreachCampaigns,
   listOutreachCampaignsForSegment,
+  listRecentOutreachCampaigns,
 } from "./queries";
 import type {
   FollowUpTaskRow,
@@ -19,9 +21,16 @@ function buildCampaign(overrides: Partial<OutreachCampaignRow> = {}): OutreachCa
     updated_at: new Date(0).toISOString(),
     created_by: null,
     segment_id: "segment-1",
-    message_template_key: "recontacto-suave",
+    message_template_id: "template-1",
     name: "Campaña de julio",
-    notes: null,
+    slug: "campana-de-julio-abc12345",
+    description: null,
+    status: "draft",
+    task_type: "whatsapp",
+    task_priority: "medium",
+    task_title: null,
+    task_notes: null,
+    due_at: null,
     ...overrides,
   };
 }
@@ -34,12 +43,7 @@ function buildSegment(overrides: Partial<LeadSegmentRow> = {}): LeadSegmentRow {
     created_by: null,
     name: "Segmento de prueba",
     description: null,
-    filter_statuses: [],
-    filter_primary_interests: [],
-    filter_source: null,
-    filter_created_after: null,
-    filter_created_before: null,
-    filter_has_open_task: null,
+    criteria: {},
     ...overrides,
   };
 }
@@ -69,9 +73,12 @@ function buildRecipient(
   return {
     id: "recipient-1",
     created_at: new Date(0).toISOString(),
+    updated_at: new Date(0).toISOString(),
     campaign_id: "campaign-1",
     lead_id: "lead-1",
     follow_up_task_id: "task-1",
+    status: "task_created",
+    skip_reason: null,
     ...overrides,
   };
 }
@@ -86,7 +93,7 @@ function buildTask(overrides: Partial<FollowUpTaskRow> = {}): FollowUpTaskRow {
     contact_log_id: null,
     campaign_id: "campaign-1",
     created_by: null,
-    title: "Campaña: Campaña de julio",
+    title: "Contactar: Campaña de julio",
     message_template_key: "recontacto-suave",
     status: "open",
     due_at: new Date(0).toISOString(),
@@ -168,6 +175,23 @@ describe("listOutreachCampaignsForSegment", () => {
   });
 });
 
+describe("listRecentOutreachCampaigns", () => {
+  it("acota al límite indicado", async () => {
+    const campaigns = Array.from({ length: 8 }, (_, i) =>
+      buildCampaign({ id: `campaign-${i}` }),
+    );
+    const { client } = buildMock({
+      outreach_campaigns: { data: campaigns, error: null },
+      lead_segments: { data: [], error: null },
+      outreach_campaign_recipients: { data: [], error: null },
+    });
+
+    const result = await listRecentOutreachCampaigns(client, 3);
+
+    expect(result).toHaveLength(3);
+  });
+});
+
 describe("listCampaignRecipients", () => {
   it("enlaza cada recipient con su lead y tarea", async () => {
     const recipient = buildRecipient();
@@ -196,6 +220,47 @@ describe("listCampaignRecipients", () => {
     });
 
     const result = await listCampaignRecipients(client, "campaign-1");
+
+    expect(result).toEqual([]);
+  });
+});
+
+describe("listCampaignsForLead", () => {
+  it("devuelve las campañas donde el lead fue destinatario, con su status de recipient", async () => {
+    const campaign = buildCampaign();
+    const { client, calls } = buildMock({
+      outreach_campaign_recipients: {
+        data: [
+          {
+            campaign_id: "campaign-1",
+            status: "task_created",
+            created_at: "2026-07-01T00:00:00.000Z",
+          },
+        ],
+        error: null,
+      },
+      outreach_campaigns: { data: [campaign], error: null },
+    });
+
+    const result = await listCampaignsForLead(client, "lead-1");
+
+    expect(calls["outreach_campaign_recipients.eq"]).toEqual([["lead_id", "lead-1"]]);
+    expect(calls["outreach_campaign_recipients.limit"]).toEqual([[5]]);
+    expect(result).toEqual([
+      {
+        campaign,
+        recipientStatus: "task_created",
+        createdAt: "2026-07-01T00:00:00.000Z",
+      },
+    ]);
+  });
+
+  it("devuelve arreglo vacío si el lead nunca fue destinatario de ninguna campaña", async () => {
+    const { client } = buildMock({
+      outreach_campaign_recipients: { data: [], error: null },
+    });
+
+    const result = await listCampaignsForLead(client, "lead-1");
 
     expect(result).toEqual([]);
   });

@@ -29,6 +29,28 @@ function emptyCounts(): DemoRegistrationCounts {
   return { active: 0, attended: 0, noShow: 0 };
 }
 
+/**
+ * Todas las demos, sin importar estado ni fecha — para selects de filtro
+ * (ej: el criterio de un segmento), donde interesa poder elegir cualquier
+ * demo, incluidas las pasadas.
+ */
+export async function listAllDemoEvents(
+  supabase: SupabaseClient<Database>,
+  limit = 100,
+): Promise<DemoEventRow[]> {
+  const { data, error } = await supabase
+    .from("demo_events")
+    .select("*")
+    .order("starts_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data;
+}
+
 export async function listUpcomingDemoEvents(
   supabase: SupabaseClient<Database>,
   limit = 20,

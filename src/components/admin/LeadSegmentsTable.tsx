@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { formatDateTime } from "@/lib/utils";
-import { summarizeLeadSegmentFilters } from "@/lib/segments/summarize";
+import { summarizeLeadSegmentCriteria } from "@/lib/segments/summarize";
 import type { LeadSegmentRow } from "@/types/database";
 
 export function LeadSegmentsTable({
@@ -47,7 +47,7 @@ export function LeadSegmentsTable({
                 )}
               </td>
               <td className="px-4 py-3 text-ink-soft">
-                {summarizeLeadSegmentFilters(segment)}
+                {summarizeLeadSegmentCriteria(segment.criteria)}
               </td>
               <td className="px-4 py-3 font-semibold text-ink">
                 {countsBySegmentId[segment.id] ?? 0}

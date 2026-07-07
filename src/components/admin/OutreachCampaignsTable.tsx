@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatDateTime } from "@/lib/utils";
 import { CampaignStatusBadge } from "@/components/ui/Badge";
+import { CAMPAIGN_STATUS_LABELS } from "@/lib/validations/outreach-campaign";
 import type { OutreachCampaignWithSegment } from "@/lib/campaigns/queries";
 
 export function OutreachCampaignsTable({
@@ -29,43 +30,40 @@ export function OutreachCampaignsTable({
           </tr>
         </thead>
         <tbody className="divide-y divide-ink/10">
-          {campaigns.map((campaign) => {
-            const sent = campaign.recipientsCount > 0;
-            return (
-              <tr key={campaign.id} className="hover:bg-cream-dark/30">
-                <td className="px-4 py-3 font-medium text-ink">
+          {campaigns.map((campaign) => (
+            <tr key={campaign.id} className="hover:bg-cream-dark/30">
+              <td className="px-4 py-3 font-medium text-ink">
+                <Link
+                  href={`/admin/campanas/${campaign.id}`}
+                  className="hover:text-brand-700 hover:underline"
+                >
+                  {campaign.name}
+                </Link>
+              </td>
+              <td className="px-4 py-3 text-ink-soft">
+                {campaign.segment ? (
                   <Link
-                    href={`/admin/campanas/${campaign.id}`}
+                    href={`/admin/segmentos/${campaign.segment.id}`}
                     className="hover:text-brand-700 hover:underline"
                   >
-                    {campaign.name}
+                    {campaign.segment.name}
                   </Link>
-                </td>
-                <td className="px-4 py-3 text-ink-soft">
-                  {campaign.segment ? (
-                    <Link
-                      href={`/admin/segmentos/${campaign.segment.id}`}
-                      className="hover:text-brand-700 hover:underline"
-                    >
-                      {campaign.segment.name}
-                    </Link>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  <CampaignStatusBadge
-                    status={sent ? "sent" : "draft"}
-                    label={sent ? "Enviada" : "Borrador"}
-                  />
-                </td>
-                <td className="px-4 py-3 text-ink-soft">{campaign.recipientsCount}</td>
-                <td className="px-4 py-3 text-ink-soft">
-                  {formatDateTime(campaign.created_at)}
-                </td>
-              </tr>
-            );
-          })}
+                ) : (
+                  "—"
+                )}
+              </td>
+              <td className="px-4 py-3">
+                <CampaignStatusBadge
+                  status={campaign.status}
+                  label={CAMPAIGN_STATUS_LABELS[campaign.status]}
+                />
+              </td>
+              <td className="px-4 py-3 text-ink-soft">{campaign.recipientsCount}</td>
+              <td className="px-4 py-3 text-ink-soft">
+                {formatDateTime(campaign.created_at)}
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>

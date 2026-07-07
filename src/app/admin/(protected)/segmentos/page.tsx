@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { listLeadSegments, listLeadsMatchingSegment } from "@/lib/segments/queries";
+import { listLeadSegments, listLeadsMatchingCriteria } from "@/lib/segments/queries";
 import { LeadSegmentsTable } from "@/components/admin/LeadSegmentsTable";
 import { Button } from "@/components/ui/Button";
 
@@ -13,7 +13,7 @@ export default async function LeadSegmentsPage() {
   const segments = await listLeadSegments(supabase);
 
   const matchingLeadsBySegment = await Promise.all(
-    segments.map((segment) => listLeadsMatchingSegment(supabase, segment)),
+    segments.map((segment) => listLeadsMatchingCriteria(supabase, segment.criteria)),
   );
   const countsBySegmentId = Object.fromEntries(
     segments.map((segment, index) => [

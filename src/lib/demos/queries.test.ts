@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { getPublicDemoEventBySlug, listPublicUpcomingDemoEvents } from "./queries";
+import {
+  getPublicDemoEventBySlug,
+  listAllDemoEvents,
+  listPublicUpcomingDemoEvents,
+} from "./queries";
 
 function buildQueryMock(result: { data: unknown[] | null; error: unknown }) {
   const calls: Record<string, unknown[][]> = {
@@ -67,6 +71,30 @@ describe("listPublicUpcomingDemoEvents", () => {
     });
 
     const result = await listPublicUpcomingDemoEvents(client);
+
+    expect(result).toEqual([]);
+  });
+});
+
+describe("listAllDemoEvents", () => {
+  it("no filtra por status ni fecha, ordena por starts_at desc", async () => {
+    const { client, calls } = buildQueryMock({ data: [], error: null });
+
+    await listAllDemoEvents(client);
+
+    expect(calls.eq).toEqual([]);
+    expect(calls.in).toEqual([]);
+    expect(calls.gte).toEqual([]);
+    expect(calls.order).toEqual([["starts_at", { ascending: false }]]);
+  });
+
+  it("devuelve arreglo vacío si Supabase falla", async () => {
+    const { client } = buildQueryMock({
+      data: null,
+      error: { message: "db down" },
+    });
+
+    const result = await listAllDemoEvents(client);
 
     expect(result).toEqual([]);
   });

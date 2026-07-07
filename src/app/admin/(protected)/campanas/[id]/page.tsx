@@ -5,17 +5,22 @@ import {
   getOutreachCampaignById,
   listCampaignRecipients,
 } from "@/lib/campaigns/queries";
-import { getLeadSegmentById, listLeadsMatchingSegment } from "@/lib/segments/queries";
-import { getMessageTemplateByKey } from "@/lib/message-templates/queries";
+import { getLeadSegmentById, listLeadsMatchingCriteria } from "@/lib/segments/queries";
+import { getMessageTemplateById } from "@/lib/message-templates/queries";
 import { CampaignStatusBadge } from "@/components/ui/Badge";
+import { CAMPAIGN_STATUS_LABELS } from "@/lib/validations/outreach-campaign";
 import { CampaignRecipientsTable } from "@/components/admin/CampaignRecipientsTable";
+import { MaterializeRecipientsForm } from "@/components/admin/MaterializeRecipientsForm";
 import { GenerateCampaignTasksForm } from "@/components/admin/GenerateCampaignTasksForm";
+import { CancelCampaignForm } from "@/components/admin/CancelCampaignForm";
 import { LeadsTable } from "@/components/admin/LeadsTable";
 import { Card } from "@/components/ui/Card";
 
 export const metadata = {
   title: "Detalle de campaña | Admin | La Chef que Sí Sabe",
 };
+
+const CANCELLABLE_STATUSES = new Set(["draft", "ready", "tasks_created"]);
 
 export default async function OutreachCampaignDetailPage({
   params,
@@ -33,20 +38,16 @@ export default async function OutreachCampaignDetailPage({
   const [segment, recipients, template] = await Promise.all([
     getLeadSegmentById(supabase, campaign.segment_id),
     listCampaignRecipients(supabase, campaign.id),
-    campaign.message_template_key
-      ? getMessageTemplateByKey(supabase, campaign.message_template_key)
+    campaign.message_template_id
+      ? getMessageTemplateById(supabase, campaign.message_template_id)
       : Promise.resolve(null),
   ]);
 
   const matchingLeads = segment
-    ? await listLeadsMatchingSegment(supabase, segment)
+    ? await listLeadsMatchingCriteria(supabase, segment.criteria)
     : [];
 
-  const recipientLeadIds = new Set(recipients.map((recipient) => recipient.lead_id));
-  const newLeadsCount = matchingLeads.filter(
-    (lead) => !recipientLeadIds.has(lead.id),
-  ).length;
-  const sent = recipients.length > 0;
+  const pendingCount = recipients.filter((recipient) => recipient.status === "selected").length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -67,8 +68,8 @@ export default async function OutreachCampaignDetailPage({
                 </h1>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-ink-soft">
                   <CampaignStatusBadge
-                    status={sent ? "sent" : "draft"}
-                    label={sent ? "Enviada" : "Borrador"}
+                    status={campaign.status}
+                    label={CAMPAIGN_STATUS_LABELS[campaign.status]}
                   />
                   {segment && (
                     <span>
@@ -88,10 +89,13 @@ export default async function OutreachCampaignDetailPage({
                     </span>
                   </span>
                 </div>
-                {campaign.notes && (
-                  <p className="mt-2 text-sm text-ink-soft">{campaign.notes}</p>
+                {campaign.description && (
+                  <p className="mt-2 text-sm text-ink-soft">{campaign.description}</p>
                 )}
               </div>
+              {CANCELLABLE_STATUSES.has(campaign.status) && (
+                <CancelCampaignForm campaignId={campaign.id} />
+              )}
             </div>
           </Card>
 
@@ -99,8 +103,8 @@ export default async function OutreachCampaignDetailPage({
             <Card>
               <p className="text-sm text-ink-soft">
                 El segmento de esta campaña ya no existe, así que no se puede
-                calcular a quién llega. El historial de tareas ya generadas
-                sigue disponible abajo.
+                previsualizar a quién llega. El historial de destinatarios
+                y tareas ya generadas sigue disponible abajo.
               </p>
             </Card>
           )}
@@ -108,12 +112,12 @@ export default async function OutreachCampaignDetailPage({
           {segment && (
             <Card>
               <h2 className="font-display text-lg font-semibold text-ink">
-                Vista previa de destinatarios ({matchingLeads.length})
+                Vista previa del segmento ({matchingLeads.length})
               </h2>
               <p className="mt-1 text-sm text-ink-soft">
-                Leads que hoy matchean el segmento{" "}
-                <strong className="text-ink">{segment.name}</strong>. Solo
-                incluye leads que autorizaron ser contactados.
+                Leads que hoy matchean <strong className="text-ink">{segment.name}</strong>{" "}
+                (preview acotado a 50). Esta lista puede cambiar; &ldquo;Materializar
+                destinatarios&rdquo; es lo que la fija para esta campaña.
               </p>
               <div className="mt-4">
                 <LeadsTable leads={matchingLeads} />
@@ -123,11 +127,11 @@ export default async function OutreachCampaignDetailPage({
 
           <Card>
             <h2 className="font-display text-lg font-semibold text-ink">
-              Tareas generadas ({recipients.length})
+              Destinatarios ({recipients.length})
             </h2>
             <p className="mt-1 text-sm text-ink-soft">
-              Historial de a quién ya se le generó una tarea desde esta
-              campaña.
+              Destinatarios ya materializados para esta campaña, con el
+              estado de cada uno.
             </p>
             <div className="mt-4">
               <CampaignRecipientsTable recipients={recipients} />
@@ -138,17 +142,34 @@ export default async function OutreachCampaignDetailPage({
         <div className="flex flex-col gap-6">
           <Card>
             <h2 className="font-display text-lg font-semibold text-ink">
-              Generar tareas de seguimiento
+              Paso 1: Materializar destinatarios
             </h2>
             <p className="mt-1 text-sm text-ink-soft">
-              Crea una tarea de seguimiento por cada lead nuevo del segmento
-              (los que ya la tienen de esta campaña se saltan). Podrás
-              trabajarlas después desde el Centro de Seguimientos.
+              Fija como destinatarios a los leads que matchean el segmento
+              ahora mismo (solo con consentimiento de contacto). No genera
+              tareas ni envía nada todavía.
+            </p>
+            <div className="mt-4">
+              <MaterializeRecipientsForm campaignId={campaign.id} />
+            </div>
+          </Card>
+
+          <Card>
+            <h2 className="font-display text-lg font-semibold text-ink">
+              Paso 2: Generar tareas de seguimiento
+            </h2>
+            <p className="mt-1 text-sm text-ink-soft">
+              Crea una tarea de seguimiento manual por cada destinatario
+              pendiente. Podrás trabajarlas después desde{" "}
+              <Link href="/admin/seguimientos" className="font-semibold underline">
+                Ver seguimientos
+              </Link>
+              .
             </p>
             <div className="mt-4">
               <GenerateCampaignTasksForm
                 campaignId={campaign.id}
-                newLeadsCount={segment ? newLeadsCount : 0}
+                pendingCount={pendingCount}
               />
             </div>
           </Card>

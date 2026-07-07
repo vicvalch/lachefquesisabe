@@ -34,6 +34,8 @@ const contactChannelValues = CONTACT_CHANNEL_OPTIONS.map(
   (option) => option.value,
 ) as [ContactChannel, ...ContactChannel[]];
 
+export const CONTACT_CHANNEL_VALUES = contactChannelValues;
+
 const contactDirectionValues = CONTACT_DIRECTION_OPTIONS.map(
   (option) => option.value,
 ) as [ContactDirection, ...ContactDirection[]];

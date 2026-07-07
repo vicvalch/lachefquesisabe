@@ -2,6 +2,7 @@ import type { HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 import type {
   AttendanceStatus,
+  CampaignStatus,
   ContentStatus,
   DemoEventStatus,
   LeadStatus,
@@ -106,11 +107,12 @@ export function AttendanceStatusBadge({
   );
 }
 
-export type CampaignStatus = "draft" | "sent";
-
 const campaignStatusClasses: Record<CampaignStatus, string> = {
   draft: "bg-ink/10 text-ink-soft",
-  sent: "bg-olive-500/25 text-olive-600",
+  ready: "bg-brand-100 text-brand-700",
+  tasks_created: "bg-mustard-400/50 text-brand-700",
+  completed: "bg-olive-500/25 text-olive-600",
+  cancelled: "bg-ink/15 text-ink-soft",
 };
 
 interface CampaignStatusBadgeProps extends HTMLAttributes<HTMLSpanElement> {

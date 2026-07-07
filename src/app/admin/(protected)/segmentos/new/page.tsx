@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { listAllDemoEvents } from "@/lib/demos/queries";
+import { listContentPostsAdmin } from "@/lib/content/queries";
 import { LeadSegmentForm } from "@/components/admin/LeadSegmentForm";
 import { Card } from "@/components/ui/Card";
 
@@ -6,7 +9,13 @@ export const metadata = {
   title: "Nuevo segmento | Admin | La Chef que Sí Sabe",
 };
 
-export default function NewLeadSegmentPage() {
+export default async function NewLeadSegmentPage() {
+  const supabase = await createClient();
+  const [demoEvents, contentPosts] = await Promise.all([
+    listAllDemoEvents(supabase),
+    listContentPostsAdmin(supabase),
+  ]);
+
   return (
     <div className="flex flex-col gap-6">
       <Link
@@ -27,7 +36,7 @@ export default function NewLeadSegmentPage() {
       </div>
 
       <Card className="max-w-2xl">
-        <LeadSegmentForm />
+        <LeadSegmentForm demoEvents={demoEvents} contentPosts={contentPosts} />
       </Card>
     </div>
   );

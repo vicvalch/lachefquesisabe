@@ -7,6 +7,7 @@ import {
   listUpcomingDemoEvents,
 } from "@/lib/demos/queries";
 import { getContentStats, listRecentContentPosts } from "@/lib/content/queries";
+import { listRecentOutreachCampaigns } from "@/lib/campaigns/queries";
 import {
   PRIMARY_INTEREST_OPTIONS,
   LEAD_STATUS_LABELS,
@@ -15,6 +16,7 @@ import { StatCard } from "@/components/admin/StatCard";
 import { UpcomingFollowUps } from "@/components/admin/UpcomingFollowUps";
 import { UpcomingDemos } from "@/components/admin/UpcomingDemos";
 import { RecentContentPosts } from "@/components/admin/RecentContentPosts";
+import { OutreachCampaignsTable } from "@/components/admin/OutreachCampaignsTable";
 
 export const metadata = {
   title: "Dashboard | Admin | La Chef que Sí Sabe",
@@ -22,14 +24,21 @@ export const metadata = {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const [stats, dueFollowUpTasks, upcomingDemos, contentStats, recentContent] =
-    await Promise.all([
-      getLeadStats(supabase),
-      listDueFollowUpTasks(supabase),
-      listUpcomingDemoEvents(supabase, 5),
-      getContentStats(supabase),
-      listRecentContentPosts(supabase, 5),
-    ]);
+  const [
+    stats,
+    dueFollowUpTasks,
+    upcomingDemos,
+    contentStats,
+    recentContent,
+    recentCampaigns,
+  ] = await Promise.all([
+    getLeadStats(supabase),
+    listDueFollowUpTasks(supabase),
+    listUpcomingDemoEvents(supabase, 5),
+    getContentStats(supabase),
+    listRecentContentPosts(supabase, 5),
+    listRecentOutreachCampaigns(supabase, 5),
+  ]);
   const demoCounts = await getRegistrationCountsByDemoIds(
     supabase,
     upcomingDemos.map((demo) => demo.id),
@@ -102,6 +111,26 @@ export default async function DashboardPage() {
         </p>
         <div className="mt-4">
           <RecentContentPosts posts={recentContent} />
+        </div>
+      </div>
+
+      <div>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="font-display text-lg font-semibold text-ink">
+            Campañas recientes
+          </h2>
+          <Link
+            href="/admin/campanas"
+            className="text-sm font-semibold text-brand-700 hover:underline"
+          >
+            Ver todas las campañas →
+          </Link>
+        </div>
+        <p className="mt-1 text-sm text-ink-soft">
+          Últimas campañas manuales creadas, con su estado y destinatarios.
+        </p>
+        <div className="mt-4">
+          <OutreachCampaignsTable campaigns={recentCampaigns} />
         </div>
       </div>
 

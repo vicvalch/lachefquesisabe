@@ -8,16 +8,25 @@ function buildInput(overrides: Partial<LeadSegmentFormInput> = {}): LeadSegmentF
     description: "",
     statuses: ["new"],
     primary_interests: [],
-    source: "",
-    created_after: "",
-    created_before: "",
+    sources: "",
+    consent_contact: "any",
+    created_from: "",
+    created_to: "",
+    last_contacted_before: "",
+    last_contacted_after: "",
+    next_follow_up_before: "",
+    next_follow_up_after: "",
     has_open_follow_up_task: "any",
+    demo_event_id: "",
+    demo_attendance_statuses: [],
+    content_post_id: "",
+    search: "",
     ...overrides,
   };
 }
 
 describe("createLeadSegment", () => {
-  it("inserta el segmento con created_by y los filtros traducidos", async () => {
+  it("inserta el segmento con created_by y el criterio traducido", async () => {
     const single = vi.fn().mockResolvedValue({ data: { id: "segment-1" }, error: null });
     const select = vi.fn().mockReturnValue({ single });
     const insert = vi.fn().mockReturnValue({ select });
@@ -35,7 +44,7 @@ describe("createLeadSegment", () => {
       expect.objectContaining({
         created_by: "user-1",
         name: "Interesados sin contactar",
-        filter_statuses: ["new"],
+        criteria: { statuses: ["new"] },
       }),
     );
   });

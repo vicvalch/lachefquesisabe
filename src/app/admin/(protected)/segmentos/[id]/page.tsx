@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getLeadSegmentById, listLeadsMatchingSegment } from "@/lib/segments/queries";
+import { getLeadSegmentById, listLeadsMatchingCriteria } from "@/lib/segments/queries";
 import { listOutreachCampaignsForSegment } from "@/lib/campaigns/queries";
+import { listAllDemoEvents } from "@/lib/demos/queries";
+import { listContentPostsAdmin } from "@/lib/content/queries";
 import { EditLeadSegmentForm } from "@/components/admin/EditLeadSegmentForm";
 import { LeadsTable } from "@/components/admin/LeadsTable";
 import { OutreachCampaignsTable } from "@/components/admin/OutreachCampaignsTable";
@@ -26,9 +28,11 @@ export default async function LeadSegmentDetailPage({
     notFound();
   }
 
-  const [matchingLeads, campaigns] = await Promise.all([
-    listLeadsMatchingSegment(supabase, segment),
+  const [matchingLeads, campaigns, demoEvents, contentPosts] = await Promise.all([
+    listLeadsMatchingCriteria(supabase, segment.criteria),
     listOutreachCampaignsForSegment(supabase, segment.id),
+    listAllDemoEvents(supabase),
+    listContentPostsAdmin(supabase),
   ]);
 
   return (
@@ -63,8 +67,9 @@ export default async function LeadSegmentDetailPage({
               Leads en este segmento ({matchingLeads.length})
             </h2>
             <p className="mt-1 text-sm text-ink-soft">
-              Se calcula en vivo según los filtros de este segmento: solo
-              incluye leads que autorizaron ser contactados.
+              Se calcula en vivo según el criterio de este segmento (preview
+              acotado a 50 leads). Las campañas manuales solo generan tareas
+              para leads con consentimiento de contacto.
             </p>
             <div className="mt-4">
               <LeadsTable leads={matchingLeads} />
@@ -76,8 +81,8 @@ export default async function LeadSegmentDetailPage({
               Campañas de este segmento
             </h2>
             <p className="mt-1 text-sm text-ink-soft">
-              Cada campaña elige una plantilla y genera una tarea de
-              seguimiento manual por lead.
+              Cada campaña manual elige una plantilla, materializa
+              destinatarios y genera tareas de seguimiento por lead.
             </p>
             <div className="mt-4">
               <OutreachCampaignsTable campaigns={campaigns} />
@@ -87,7 +92,11 @@ export default async function LeadSegmentDetailPage({
 
         <div className="flex flex-col gap-6">
           <Card>
-            <EditLeadSegmentForm segment={segment} />
+            <EditLeadSegmentForm
+              segment={segment}
+              demoEvents={demoEvents}
+              contentPosts={contentPosts}
+            />
           </Card>
         </div>
       </div>

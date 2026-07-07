@@ -16,10 +16,19 @@ function parseSegmentFormData(formData: FormData) {
     description: formData.get("description"),
     statuses: formData.getAll("statuses"),
     primary_interests: formData.getAll("primary_interests"),
-    source: formData.get("source"),
-    created_after: formData.get("created_after"),
-    created_before: formData.get("created_before"),
+    sources: formData.get("sources"),
+    consent_contact: formData.get("consent_contact"),
+    created_from: formData.get("created_from"),
+    created_to: formData.get("created_to"),
+    last_contacted_before: formData.get("last_contacted_before"),
+    last_contacted_after: formData.get("last_contacted_after"),
+    next_follow_up_before: formData.get("next_follow_up_before"),
+    next_follow_up_after: formData.get("next_follow_up_after"),
     has_open_follow_up_task: formData.get("has_open_follow_up_task"),
+    demo_event_id: formData.get("demo_event_id"),
+    demo_attendance_statuses: formData.getAll("demo_attendance_statuses"),
+    content_post_id: formData.get("content_post_id"),
+    search: formData.get("search"),
   };
 }
 
