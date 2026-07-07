@@ -5,7 +5,7 @@ const validPayload = {
   name: "Ana Pérez",
   email: "ana@example.com",
   phone: "+34600000000",
-  interest: "demo_thermomix" as const,
+  primary_interest: "buy_thermomix" as const,
   message: "Me encantaría ver una demo",
   consent_contact: true,
   website: "",
@@ -45,7 +45,7 @@ describe("leadFormSchema", () => {
   it("rechaza un interés fuera del enum", () => {
     const result = leadFormSchema.safeParse({
       ...validPayload,
-      interest: "no-existe",
+      primary_interest: "no-existe",
     });
     expect(result.success).toBe(false);
   });
@@ -58,7 +58,7 @@ describe("leadFormSchema", () => {
   it("descarta campos internos que no pertenecen al payload público", () => {
     const result = leadFormSchema.safeParse({
       ...validPayload,
-      status: "convertido",
+      status: "purchased",
       notes: "no debería poder setear esto",
     });
     expect(result.success).toBe(true);

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  LEAD_INTEREST_OPTIONS,
+  PRIMARY_INTEREST_OPTIONS,
   leadFormSchema,
   type LeadFormValues,
 } from "@/lib/validations/lead";
@@ -19,7 +19,7 @@ const defaultValues: LeadFormValues = {
   name: "",
   email: "",
   phone: "",
-  interest: "recetas",
+  primary_interest: "easy_recipes",
   message: "",
   consent_contact: false,
   website: "",
@@ -103,11 +103,11 @@ export function LeadForm() {
 
       <Field
         label="¿Qué te interesa?"
-        htmlFor="interest"
-        error={errors.interest?.message}
+        htmlFor="primary_interest"
+        error={errors.primary_interest?.message}
       >
-        <Select id="interest" {...register("interest")}>
-          {LEAD_INTEREST_OPTIONS.map((option) => (
+        <Select id="primary_interest" {...register("primary_interest")}>
+          {PRIMARY_INTEREST_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>

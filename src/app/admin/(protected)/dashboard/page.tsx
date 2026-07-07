@@ -1,7 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import { getLeadStats } from "@/lib/leads/queries";
-import { LEAD_INTEREST_OPTIONS, LEAD_STATUS_LABELS } from "@/lib/validations/lead";
+import { getLeadStats, listUpcomingFollowUps } from "@/lib/leads/queries";
+import {
+  PRIMARY_INTEREST_OPTIONS,
+  LEAD_STATUS_LABELS,
+} from "@/lib/validations/lead";
 import { StatCard } from "@/components/admin/StatCard";
+import { UpcomingFollowUps } from "@/components/admin/UpcomingFollowUps";
 
 export const metadata = {
   title: "Dashboard | Admin | La Chef que Sí Sabe",
@@ -9,7 +13,10 @@ export const metadata = {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const stats = await getLeadStats(supabase);
+  const [stats, upcomingFollowUps] = await Promise.all([
+    getLeadStats(supabase),
+    listUpcomingFollowUps(supabase),
+  ]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -29,10 +36,19 @@ export default async function DashboardPage() {
           value={stats.last7Days}
           hint="Nuevos leads recibidos"
         />
-        <StatCard
-          label="Nuevos por contactar"
-          value={stats.byStatus.nuevo}
-        />
+        <StatCard label="Nuevos por contactar" value={stats.byStatus.new} />
+      </div>
+
+      <div>
+        <h2 className="font-display text-lg font-semibold text-ink">
+          Seguimientos pendientes
+        </h2>
+        <p className="mt-1 text-sm text-ink-soft">
+          Leads con un próximo seguimiento vencido o para hoy.
+        </p>
+        <div className="mt-4">
+          <UpcomingFollowUps leads={upcomingFollowUps} />
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -56,7 +72,7 @@ export default async function DashboardPage() {
             Por interés
           </h2>
           <div className="mt-4 grid grid-cols-2 gap-4">
-            {LEAD_INTEREST_OPTIONS.map((option) => (
+            {PRIMARY_INTEREST_OPTIONS.map((option) => (
               <StatCard
                 key={option.value}
                 label={option.label}

@@ -1,16 +1,8 @@
+import Link from "next/link";
 import { StatusBadge } from "@/components/ui/Badge";
-import { LEAD_STATUS_LABELS } from "@/lib/validations/lead";
+import { LEAD_STATUS_LABELS, PRIMARY_INTEREST_LABELS } from "@/lib/validations/lead";
+import { formatDateTime } from "@/lib/utils";
 import type { LeadRow } from "@/types/database";
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("es-ES", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export function LeadsTable({ leads }: { leads: LeadRow[] }) {
   if (leads.length === 0) {
@@ -36,13 +28,22 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
         </thead>
         <tbody className="divide-y divide-ink/10">
           {leads.map((lead) => (
-            <tr key={lead.id}>
-              <td className="px-4 py-3 font-medium text-ink">{lead.name}</td>
+            <tr key={lead.id} className="hover:bg-cream-dark/30">
+              <td className="px-4 py-3 font-medium text-ink">
+                <Link
+                  href={`/admin/leads/${lead.id}`}
+                  className="hover:text-brand-700 hover:underline"
+                >
+                  {lead.name}
+                </Link>
+              </td>
               <td className="px-4 py-3 text-ink-soft">
                 <div>{lead.email}</div>
                 {lead.phone && <div>{lead.phone}</div>}
               </td>
-              <td className="px-4 py-3 text-ink-soft">{lead.interest}</td>
+              <td className="px-4 py-3 text-ink-soft">
+                {PRIMARY_INTEREST_LABELS[lead.primary_interest]}
+              </td>
               <td className="px-4 py-3">
                 <StatusBadge
                   status={lead.status}
@@ -50,7 +51,7 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
                 />
               </td>
               <td className="px-4 py-3 text-ink-soft">
-                {formatDate(lead.created_at)}
+                {formatDateTime(lead.created_at)}
               </td>
             </tr>
           ))}
