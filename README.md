@@ -9,15 +9,18 @@ Thermomix.
 Este repositorio contiene el **PR 1** (landing, captura de leads, Supabase,
 admin con login y un dashboard inicial), el **PR 2** (detalle de lead,
 estados comerciales ampliados, notas, próximos seguimientos, bitácora de
-contactos y plantillas de WhatsApp) y el **PR 3**: módulo de demostraciones
+contactos y plantillas de WhatsApp), el **PR 3** (módulo de demostraciones
 completo, tanto para el equipo admin (`/admin/demos`: crear demos, agregar
 leads, controlar asistencia) como para el público (`/demos`: ver próximas
-demostraciones y registrarse a una desde el sitio, sin sesión), para que el
-tráfico del sitio se convierta en registros reales y el equipo pueda dar
-seguimiento manual por WhatsApp sin depender de hojas sueltas. No incluye
-automatizaciones, WhatsApp API, email automation, HubSpot, pagos online,
-campañas avanzadas, recetas en CMS ni integración con Google Calendar — eso
-queda para PRs posteriores.
+demostraciones y registrarse a una desde el sitio, sin sesión)) y el **PR
+4**: content hub de recetas y tips de cocina (`/admin/recetas`: crear,
+editar, publicar y despublicar; `/recetas`: navegar y leer recetas
+publicadas, con CTAs hacia las demos y la captura de leads), para que el
+sitio deje de ser solo landing + demos y empiece a atraer tráfico propio.
+No incluye automatizaciones, WhatsApp API, email automation, HubSpot,
+pagos, carrito, inventario, cursos pagos, membresías, subida avanzada de
+imágenes, IA generativa, comentarios públicos, ratings, favoritos, login de
+usuarios finales ni newsletter avanzada — eso queda para PRs posteriores.
 
 ## Stack
 
@@ -37,6 +40,9 @@ src/
     demos/                    # Sitio público de demostraciones
       page.tsx                 # Próximas demos (cards)
       [slug]/page.tsx           # Detalle de una demo + formulario de registro
+    recetas/                  # Sitio público de recetas y tips
+      page.tsx                 # Recetas/tips publicados (cards)
+      [slug]/page.tsx           # Detalle de una receta + CTAs
     gracias/                  # Thank-you page (leads y registros a demo)
     api/
       leads/route.ts           # Endpoint de captura de leads (landing)
@@ -48,16 +54,20 @@ src/
         demos/                  # Listado, creación y detalle de demostraciones
           [id]/                  # Roster, cupo y asistencia de una demo
           new/                   # Crear una demo
+        recetas/                 # Listado, creación y edición de recetas/tips
+          [id]/                    # Editar contenido y publicar/despublicar
+          new/                     # Crear una receta o tip (se crea en borrador)
   components/
     landing/                  # Header, Hero, Features, LeadForm, Footer...
     demos/                    # DemoCard, PublicDemoRegistrationForm (sitio público)
+    recipes/                  # RecipeCard, RecipeCtaSection (sitio público)
     admin/                    # Sidebar, StatCard, LeadsTable, LeadInfoCard,
                                # LeadUpdateForm, ContactLogForm/Timeline,
                                # UpcomingFollowUps, WhatsAppTemplates,
                                # DemoEventForm/InfoCard/StatusForm,
                                # DemoEventsList, DemoRegistrationForm,
                                # DemoRosterTable, DemoTemplateActions,
-                               # UpcomingDemos, LoginForm...
+                               # UpcomingDemos, RecipeForm, RecipesTable, LoginForm...
     ui/                       # Button, Input, Field, Select, Textarea, Card, Badge
   lib/
     supabase/                 # Clientes de Supabase (server + proxy/sesión)
@@ -65,8 +75,10 @@ src/
     leads/                     # Capa de acceso a datos de leads (testeable)
     demos/                     # Capa de acceso a datos de demos e inscripciones,
                                 # registro público, slugs y formato de fecha/hora
+    recipes/                   # Capa de acceso a datos de recetas/tips, slugs
+                                # y estadísticas para el dashboard
     whatsapp/                  # Plantillas (leads y demos) y utilidades de WhatsApp
-    actions/                   # Server actions (auth, leads, contact logs, demos)
+    actions/                   # Server actions (auth, leads, contact logs, demos, recipes)
   proxy.ts                     # Protege /admin (antes "middleware.ts")
 supabase/
   migrations/
@@ -76,6 +88,8 @@ supabase/
     0003_demo_events.sql       # demo_events, demo_registrations y políticas RLS
                                 # (admin + lectura/registro público)
     0004_leads_email_optional.sql  # leads.email pasa a ser opcional
+    0005_recipes.sql           # Tabla recipes y políticas RLS (admin +
+                                # lectura pública de las publicadas)
 ```
 
 ## Configuración
@@ -312,6 +326,49 @@ lead, demo)`, que rellena `{{name}}`, `{{demo_title}}`, `{{demo_date}}`,
 WhatsApp: `DemoTemplateActions` en el roster de `/admin/demos/[id]` solo
 copia el mensaje al portapapeles o abre un link `wa.me`.
 
+## Recetas y content hub (PR 4)
+
+### Sitio público
+
+- **`/recetas`**: lista las recetas y tips **publicados** (`status =
+  'published'`, lo mismo que filtra RLS), ordenados por fecha de
+  publicación descendente. Cada card muestra tipo de contenido (receta o
+  tip), tiempo de preparación/porciones si se definieron, un resumen corto
+  y un CTA "Ver receta". Si no hay nada publicado, muestra un mensaje
+  invitando a dejar los datos en la landing.
+- **`/recetas/[slug]`**: detalle completo (tipo, tiempo/porciones, imagen
+  de portada opcional, resumen, lista de ingredientes si se definieron y
+  el contenido completo). Si la receta no existe o está en borrador, la
+  página responde 404. Al final de cada receta hay una sección de **CTAs**
+  (mensaje de cierre personalizable por receta, o uno genérico) con
+  botones hacia `/demos`, hacia el formulario de leads de la landing
+  (`/#contacto`) y hacia `/recetas` — y hasta 2 recetas relacionadas para
+  seguir navegando.
+- El link "Recetas" del header del sitio (antes un ancla a una sección de
+  la landing) ahora apunta a `/recetas`.
+
+### Panel admin
+
+`/admin/recetas` lista todas las recetas y tips (borrador y publicados),
+cada uno con su tipo de contenido, fecha de creación y estado.
+
+- **Crear receta/tip** (`/admin/recetas/new`): título, tipo de contenido
+  (receta o tip), resumen, imagen de portada (solo un link — no hay subida
+  de archivos todavía), tiempo de preparación y porciones opcionales,
+  ingredientes (opcional, uno por línea), contenido y un mensaje de cierre
+  opcional para el CTA. Siempre se crea en **borrador**; `created_by` y el
+  `slug` (generado a partir del título) salen del servidor, nunca del
+  formulario.
+- **Editar receta/tip** (`/admin/recetas/[id]`): mismo formulario que la
+  creación, más un selector de **Estado** (borrador/publicada) — así se
+  publica y despublica desde el mismo lugar donde se edita el contenido.
+  La primera vez que una receta pasa a "publicada" se guarda
+  `published_at`; despublicarla no borra esa fecha, para que si se vuelve
+  a publicar conserve su lugar cronológico en el listado público.
+
+`/admin/dashboard` incluye una tarjeta **Recetas publicadas** (con las que
+siguen en borrador como dato secundario).
+
 ## Notas de seguridad
 
 - El formulario de leads incluye un campo honeypot y validación server-side
@@ -356,3 +413,11 @@ copia el mensaje al portapapeles o abre un link `wa.me`.
   valida `status`/`starts_at` en la aplicación además de en RLS (defensa
   en profundidad), igual que el resto de las server actions verifican la
   sesión aunque la ruta ya esté protegida.
+- `recipes` (PR 4) sigue el mismo patrón que `demo_events`: el equipo
+  autenticado tiene CRUD completo (`lib/actions/recipes.ts` verifica la
+  sesión antes de escribir, y `created_by` sale de ella, no del
+  formulario); el rol `anon` solo tiene **lectura acotada** a las recetas
+  con `status = 'published'` (`0005_recipes.sql`) y no puede insertar,
+  actualizar ni borrar nada — no hay comentarios, ratings ni favoritos
+  públicos todavía. `lib/recipes/rls-policies.test.ts` deja esto como
+  prueba de regresión sobre el SQL de la migración.

@@ -45,6 +45,10 @@ export type AttendanceStatus =
   | "no_show"
   | "cancelled";
 
+export type RecipeContentType = "recipe" | "tip";
+
+export type RecipeStatus = "draft" | "published";
+
 export type LeadRow = {
   id: string;
   created_at: string;
@@ -194,6 +198,59 @@ export type DemoRegistrationUpdate = {
   notes?: string | null;
 };
 
+export type RecipeRow = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  published_at: string | null;
+  created_by: string | null;
+  title: string;
+  slug: string;
+  content_type: RecipeContentType;
+  status: RecipeStatus;
+  summary: string | null;
+  cover_image_url: string | null;
+  prep_minutes: number | null;
+  servings: number | null;
+  ingredients: string | null;
+  content: string;
+  cta_message: string | null;
+};
+
+export type RecipeInsert = {
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+  published_at?: string | null;
+  created_by?: string | null;
+  title: string;
+  slug: string;
+  content_type?: RecipeContentType;
+  status?: RecipeStatus;
+  summary?: string | null;
+  cover_image_url?: string | null;
+  prep_minutes?: number | null;
+  servings?: number | null;
+  ingredients?: string | null;
+  content: string;
+  cta_message?: string | null;
+};
+
+export type RecipeUpdate = {
+  published_at?: string | null;
+  title?: string;
+  slug?: string;
+  content_type?: RecipeContentType;
+  status?: RecipeStatus;
+  summary?: string | null;
+  cover_image_url?: string | null;
+  prep_minutes?: number | null;
+  servings?: number | null;
+  ingredients?: string | null;
+  content?: string;
+  cta_message?: string | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -219,6 +276,12 @@ export type Database = {
         Row: DemoRegistrationRow;
         Insert: DemoRegistrationInsert;
         Update: DemoRegistrationUpdate;
+        Relationships: [];
+      };
+      recipes: {
+        Row: RecipeRow;
+        Insert: RecipeInsert;
+        Update: RecipeUpdate;
         Relationships: [];
       };
     };

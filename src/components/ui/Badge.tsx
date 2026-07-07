@@ -1,6 +1,11 @@
 import type { HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
-import type { AttendanceStatus, DemoEventStatus, LeadStatus } from "@/types/database";
+import type {
+  AttendanceStatus,
+  DemoEventStatus,
+  LeadStatus,
+  RecipeStatus,
+} from "@/types/database";
 
 const statusClasses: Record<LeadStatus, string> = {
   new: "bg-brand-100 text-brand-700",
@@ -92,6 +97,36 @@ export function AttendanceStatusBadge({
       className={cn(
         "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
         attendanceStatusClasses[status],
+        className,
+      )}
+      {...props}
+    >
+      {label}
+    </span>
+  );
+}
+
+const recipeStatusClasses: Record<RecipeStatus, string> = {
+  draft: "bg-ink/10 text-ink-soft",
+  published: "bg-olive-500/25 text-olive-600",
+};
+
+interface RecipeStatusBadgeProps extends HTMLAttributes<HTMLSpanElement> {
+  status: RecipeStatus;
+  label: string;
+}
+
+export function RecipeStatusBadge({
+  status,
+  label,
+  className,
+  ...props
+}: RecipeStatusBadgeProps) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
+        recipeStatusClasses[status],
         className,
       )}
       {...props}

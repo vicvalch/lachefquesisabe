@@ -4,6 +4,7 @@ import {
   getRegistrationCountsByDemoIds,
   listUpcomingDemoEvents,
 } from "@/lib/demos/queries";
+import { getRecipeStats } from "@/lib/recipes/queries";
 import {
   PRIMARY_INTEREST_OPTIONS,
   LEAD_STATUS_LABELS,
@@ -18,11 +19,13 @@ export const metadata = {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const [stats, upcomingFollowUps, upcomingDemos] = await Promise.all([
-    getLeadStats(supabase),
-    listUpcomingFollowUps(supabase),
-    listUpcomingDemoEvents(supabase, 5),
-  ]);
+  const [stats, upcomingFollowUps, upcomingDemos, recipeStats] =
+    await Promise.all([
+      getLeadStats(supabase),
+      listUpcomingFollowUps(supabase),
+      listUpcomingDemoEvents(supabase, 5),
+      getRecipeStats(supabase),
+    ]);
   const demoCounts = await getRegistrationCountsByDemoIds(
     supabase,
     upcomingDemos.map((demo) => demo.id),
@@ -47,6 +50,11 @@ export default async function DashboardPage() {
           hint="Nuevos leads recibidos"
         />
         <StatCard label="Nuevos por contactar" value={stats.byStatus.new} />
+        <StatCard
+          label="Recetas publicadas"
+          value={recipeStats.published}
+          hint={`${recipeStats.draft} en borrador`}
+        />
       </div>
 
       <div>
