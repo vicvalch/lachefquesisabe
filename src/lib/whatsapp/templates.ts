@@ -1,4 +1,5 @@
-import type { LeadRow, PrimaryInterest } from "@/types/database";
+import type { DemoEventRow, LeadRow, PrimaryInterest } from "@/types/database";
+import { formatDateTime } from "@/lib/utils";
 
 const INTEREST_PHRASES: Record<PrimaryInterest, string> = {
   easy_recipes: "las recetas fáciles",
@@ -71,6 +72,18 @@ export function normalizePhoneForWhatsApp(phone: string | null): string | null {
   }
 
   return digits;
+}
+
+/**
+ * Mensaje de recordatorio para una demo específica, con fecha y ubicación,
+ * para el seguimiento manual por WhatsApp desde el detalle de la demo.
+ */
+export function buildDemoReminderMessage(
+  lead: LeadRow,
+  demo: DemoEventRow,
+): string {
+  const where = demo.location ? ` en ${demo.location}` : "";
+  return `¡Hola ${firstName(lead.name)}! Te escribo para confirmar tu lugar en "${demo.title}" el ${formatDateTime(demo.scheduled_at)}${where}. ¿Nos confirmas tu asistencia? 🎉`;
 }
 
 export function buildWhatsAppUrl(

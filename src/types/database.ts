@@ -29,6 +29,17 @@ export type ContactChannel =
 
 export type ContactDirection = "outbound" | "inbound";
 
+export type DemoType = "in_person" | "virtual";
+
+export type DemoEventStatus = "scheduled" | "completed" | "cancelled";
+
+export type AttendanceStatus =
+  | "registered"
+  | "confirmed"
+  | "attended"
+  | "no_show"
+  | "cancelled";
+
 export type LeadRow = {
   id: string;
   created_at: string;
@@ -99,6 +110,68 @@ export type ContactLogInsert = {
   next_follow_up_at?: string | null;
 };
 
+export type DemoEventRow = {
+  id: string;
+  created_at: string;
+  created_by: string | null;
+  title: string;
+  description: string | null;
+  demo_type: DemoType;
+  location: string | null;
+  scheduled_at: string;
+  capacity: number;
+  status: DemoEventStatus;
+  notes: string | null;
+};
+
+export type DemoEventInsert = {
+  id?: string;
+  created_at?: string;
+  created_by?: string | null;
+  title: string;
+  description?: string | null;
+  demo_type: DemoType;
+  location?: string | null;
+  scheduled_at: string;
+  capacity: number;
+  status?: DemoEventStatus;
+  notes?: string | null;
+};
+
+export type DemoEventUpdate = {
+  title?: string;
+  description?: string | null;
+  demo_type?: DemoType;
+  location?: string | null;
+  scheduled_at?: string;
+  capacity?: number;
+  status?: DemoEventStatus;
+  notes?: string | null;
+};
+
+export type DemoRegistrationRow = {
+  id: string;
+  created_at: string;
+  demo_event_id: string;
+  lead_id: string;
+  attendance_status: AttendanceStatus;
+  notes: string | null;
+};
+
+export type DemoRegistrationInsert = {
+  id?: string;
+  created_at?: string;
+  demo_event_id: string;
+  lead_id: string;
+  attendance_status?: AttendanceStatus;
+  notes?: string | null;
+};
+
+export type DemoRegistrationUpdate = {
+  attendance_status?: AttendanceStatus;
+  notes?: string | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -112,6 +185,18 @@ export type Database = {
         Row: ContactLogRow;
         Insert: ContactLogInsert;
         Update: Partial<ContactLogInsert>;
+        Relationships: [];
+      };
+      demo_events: {
+        Row: DemoEventRow;
+        Insert: DemoEventInsert;
+        Update: DemoEventUpdate;
+        Relationships: [];
+      };
+      demo_registrations: {
+        Row: DemoRegistrationRow;
+        Insert: DemoRegistrationInsert;
+        Update: DemoRegistrationUpdate;
         Relationships: [];
       };
     };

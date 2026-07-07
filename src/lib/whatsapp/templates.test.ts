@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   WHATSAPP_TEMPLATES,
+  buildDemoReminderMessage,
   buildWhatsAppUrl,
   normalizePhoneForWhatsApp,
 } from "./templates";
-import type { LeadRow } from "@/types/database";
+import type { DemoEventRow, LeadRow } from "@/types/database";
 
 const baseLead: LeadRow = {
   id: "lead-1",
@@ -29,6 +30,39 @@ describe("WHATSAPP_TEMPLATES", () => {
       expect(message).toContain("Ana");
       expect(message).not.toContain("Ana María Pérez");
     }
+  });
+});
+
+const baseDemo: DemoEventRow = {
+  id: "demo-1",
+  created_at: new Date(0).toISOString(),
+  created_by: null,
+  title: "Demo de recetas rápidas",
+  description: null,
+  demo_type: "in_person",
+  location: "Casa, Heredia",
+  scheduled_at: "2026-08-01T18:00:00.000Z",
+  capacity: 8,
+  status: "scheduled",
+  notes: null,
+};
+
+describe("buildDemoReminderMessage", () => {
+  it("incluye el primer nombre, el título y la ubicación de la demo", () => {
+    const message = buildDemoReminderMessage(baseLead, baseDemo);
+    expect(message).toContain("Ana");
+    expect(message).not.toContain("Ana María Pérez");
+    expect(message).toContain("Demo de recetas rápidas");
+    expect(message).toContain("Casa, Heredia");
+  });
+
+  it("no menciona ubicación cuando la demo no tiene una", () => {
+    const message = buildDemoReminderMessage(baseLead, {
+      ...baseDemo,
+      location: null,
+    });
+    expect(message).not.toContain(" en .");
+    expect(message).toContain("Demo de recetas rápidas");
   });
 });
 

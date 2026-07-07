@@ -7,13 +7,15 @@ Thermomix.
 > Cocina rico, fácil y sin complicarte.
 
 Este repositorio contiene el **PR 1** (landing, captura de leads, Supabase,
-admin con login y un dashboard inicial) y el **PR 2**: detalle de lead,
+admin con login y un dashboard inicial), el **PR 2** (detalle de lead,
 estados comerciales ampliados, notas, próximos seguimientos, bitácora de
-contactos (`contact_logs`) y plantillas de WhatsApp personalizadas, para que
-el seguimiento manual por WhatsApp se pueda hacer desde el admin sin perder
-oportunidades. No incluye automatizaciones, WhatsApp API, email automation,
-HubSpot, pagos online, campañas avanzadas, recetas en CMS ni agenda de
-demos — eso queda para PRs posteriores.
+contactos y plantillas de WhatsApp) y el **PR 3**: módulo de demostraciones
+(`demo_events`), inscripción de leads a una demo (`demo_registrations`) y
+control de asistencia, para que el equipo pueda organizar sus demos, ver
+cupos disponibles y dar seguimiento manual por WhatsApp sin depender de
+hojas sueltas. No incluye automatizaciones, WhatsApp API, email automation,
+HubSpot, pagos online, campañas avanzadas, recetas en CMS ni integración
+con Google Calendar — eso queda para PRs posteriores.
 
 ## Stack
 
@@ -35,24 +37,32 @@ src/
       (auth)/login/           # Login (fuera del layout protegido)
       (protected)/            # Dashboard, listado y detalle de leads (requieren sesión)
         leads/[id]/            # Detalle de un lead: estado, notas, WhatsApp
+        demos/                  # Listado, creación y detalle de demostraciones
+          [id]/                  # Roster, cupo y asistencia de una demo
+          new/                   # Crear una demo
   components/
     landing/                  # Header, Hero, Features, LeadForm, Footer...
     admin/                    # Sidebar, StatCard, LeadsTable, LeadInfoCard,
                                # LeadUpdateForm, ContactLogForm/Timeline,
-                               # UpcomingFollowUps, WhatsAppTemplates, LoginForm...
+                               # UpcomingFollowUps, WhatsAppTemplates,
+                               # DemoEventForm/InfoCard/StatusForm,
+                               # DemoEventsList, DemoRegistrationForm,
+                               # DemoRosterTable, UpcomingDemos, LoginForm...
     ui/                       # Button, Input, Field, Select, Textarea, Card, Badge
   lib/
     supabase/                 # Clientes de Supabase (server + proxy/sesión)
     validations/               # Schemas Zod compartidos
     leads/                     # Capa de acceso a datos de leads (testeable)
+    demos/                     # Capa de acceso a datos de demos e inscripciones
     whatsapp/                  # Plantillas y utilidades de WhatsApp
-    actions/                   # Server actions (auth, update de leads, contact logs)
+    actions/                   # Server actions (auth, leads, contact logs, demos)
   proxy.ts                     # Protege /admin (antes "middleware.ts")
 supabase/
   migrations/
     0001_init.sql              # Tabla leads, enums y políticas RLS
     0002_contact_logs.sql      # Estados ampliados, primary_interest, notas,
                                 # seguimientos y tabla contact_logs
+    0003_demo_events.sql       # demo_events, demo_registrations y políticas RLS
 ```
 
 ## Configuración
@@ -114,6 +124,19 @@ modelo comercial completo y agrega la bitácora de contactos:
 > `interest` → `primary_interest`). Si ya habías aplicado una versión previa
 > de `0002` en tu proyecto de Supabase con el nombre `lead_activities`,
 > reinicia el esquema de ese proyecto antes de reaplicarla.
+
+**`0003_demo_events.sql`** (PR 3) agrega el módulo de demostraciones:
+
+- `demo_events`: título, tipo (`in_person` / `virtual`), ubicación, fecha,
+  cupo (`capacity`), estado (`scheduled`, `completed`, `cancelled`) y notas
+  internas.
+- `demo_registrations`: relaciona un lead con una demo, con su propio
+  estado de asistencia (`registered`, `confirmed`, `attended`, `no_show`,
+  `cancelled`) y notas. Un mismo lead no puede inscribirse dos veces en la
+  misma demo (`unique (demo_event_id, lead_id)`).
+- Ambas tablas son de uso exclusivo del equipo admin: solo usuarios
+  **autenticados** pueden leer/insertar/actualizar/borrar; el rol `anon` no
+  tiene ninguna política sobre ellas.
 
 ### 3. Crear el usuario admin
 
@@ -181,6 +204,39 @@ limitado a 50 resultados ordenados por `created_at` descendente.
 hasta 5 leads cuyo `next_follow_up_at` ya venció, ordenados por fecha de
 seguimiento ascendente.
 
+## Demostraciones (PR 3)
+
+`/admin/demos` lista las demos **próximas** (programadas, con fecha futura)
+y **pasadas** (realizadas, canceladas o con fecha ya vencida), cada una con
+su cupo ocupado (`inscripciones activas / capacity`) y su estado.
+
+- **Crear demo** (`/admin/demos/new`): título, tipo (presencial/virtual),
+  ubicación, fecha y hora, cupo máximo y notas internas. `created_by` sale
+  de la sesión autenticada.
+- **Detalle de una demo** (`/admin/demos/[id]`):
+  - **Agregar lead a la demo**: selector con los leads que todavía no
+    están inscritos en esa demo. La inscripción se rechaza si el cupo
+    activo (todas las inscripciones menos las canceladas) ya alcanzó
+    `capacity`, y también si el lead ya estaba inscrito.
+  - **Asistentes**: cada fila permite cambiar el estado de asistencia
+    (`registrado`, `confirmó`, `asistió`, `no asistió`, `canceló`) con un
+    guardado inmediato. Al cambiarlo, **se sincroniza `leads.status`**
+    automáticamente (`invited_to_demo`, `confirmed_demo`, `attended` o
+    `no_show`, según corresponda) para que el resto del CRM — dashboard,
+    filtros de leads, seguimientos pendientes — quede al día sin trabajo
+    manual extra. Cancelar una inscripción no cambia el status del lead.
+    Cada fila también ofrece un enlace directo a WhatsApp con un mensaje
+    de recordatorio de la demo (`lib/whatsapp/templates.ts`,
+    `buildDemoReminderMessage`) cuando el lead tiene teléfono válido, y un
+    enlace al detalle del lead para el resto de plantillas.
+  - **Estado de la demo**: un formulario aparte permite marcarla como
+    realizada o cancelada y guardar notas internas, sin tocar título,
+    tipo, ubicación, fecha ni cupo (esos solo se definen al crearla).
+
+`/admin/dashboard` incluye una sección **Próximas demos** con hasta 5 demos
+programadas y su cupo, para tener a la vista lo que viene sin entrar al
+listado completo.
+
 ## Notas de seguridad
 
 - El formulario de leads incluye un campo honeypot y validación server-side
@@ -199,3 +255,9 @@ seguimiento ascendente.
   ruta — nunca confían solo en que el formulario se haya renderizado tras
   el login. `created_by` en `contact_logs` sale de esa sesión, no del
   payload del formulario.
+- Igual que `contact_logs`, `demo_events` y `demo_registrations` (PR 3)
+  solo son legibles/editables por usuarios autenticados; el rol `anon` no
+  tiene ninguna política sobre ellas, así que no hay inscripción pública a
+  demos. Las server actions correspondientes (`lib/actions/demos.ts`)
+  también verifican la sesión antes de escribir, y `created_by` en
+  `demo_events` sale de esa sesión, no del formulario.
