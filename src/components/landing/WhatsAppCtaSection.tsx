@@ -4,7 +4,8 @@ import { buttonClasses } from "@/components/ui/Button";
 import { MessageCircleIcon } from "@/components/icons";
 
 export function WhatsAppCtaSection() {
-  const href = buildWhatsAppUrl(WHATSAPP_NUMBER, WHATSAPP_DEFAULT_MESSAGE) ?? "#contacto";
+  const whatsappUrl = buildWhatsAppUrl(WHATSAPP_NUMBER, WHATSAPP_DEFAULT_MESSAGE);
+  const href = whatsappUrl ?? "#contacto";
 
   return (
     <section className="px-6 py-16">
@@ -20,8 +21,8 @@ export function WhatsAppCtaSection() {
         </p>
         <a
           href={href}
-          target="_blank"
-          rel="noopener noreferrer"
+          target={whatsappUrl ? "_blank" : undefined}
+          rel={whatsappUrl ? "noopener noreferrer" : undefined}
           className={buttonClasses("whatsapp", "mt-6 gap-2 px-6 py-3")}
         >
           <MessageCircleIcon className="h-4 w-4" />

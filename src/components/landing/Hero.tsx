@@ -11,8 +11,8 @@ const QUICK_HIGHLIGHTS = [
 ];
 
 export function Hero() {
-  const whatsappHref =
-    buildWhatsAppUrl(WHATSAPP_NUMBER, WHATSAPP_DEFAULT_MESSAGE) ?? "#contacto";
+  const whatsappUrl = buildWhatsAppUrl(WHATSAPP_NUMBER, WHATSAPP_DEFAULT_MESSAGE);
+  const whatsappHref = whatsappUrl ?? "#contacto";
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-emerald-900 to-emerald-700">
@@ -38,8 +38,8 @@ export function Hero() {
           </Link>
           <a
             href={whatsappHref}
-            target="_blank"
-            rel="noopener noreferrer"
+            target={whatsappUrl ? "_blank" : undefined}
+            rel={whatsappUrl ? "noopener noreferrer" : undefined}
             className={buttonClasses("whatsapp", "gap-2")}
           >
             <MessageCircleIcon className="h-4 w-4" />
