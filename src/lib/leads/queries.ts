@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   Database,
+  LeadActivityRow,
   LeadInterest,
   LeadRow,
   LeadStatus,
@@ -76,6 +77,40 @@ export async function listLeads(
     .select("*")
     .order("created_at", { ascending: false })
     .limit(limit);
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data;
+}
+
+export async function getLeadById(
+  supabase: SupabaseClient<Database>,
+  id: string,
+): Promise<LeadRow | null> {
+  const { data, error } = await supabase
+    .from("leads")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data;
+}
+
+export async function listLeadActivities(
+  supabase: SupabaseClient<Database>,
+  leadId: string,
+): Promise<LeadActivityRow[]> {
+  const { data, error } = await supabase
+    .from("lead_activities")
+    .select("*")
+    .eq("lead_id", leadId)
+    .order("created_at", { ascending: false });
 
   if (error || !data) {
     return [];

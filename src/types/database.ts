@@ -6,6 +6,10 @@ export type LeadInterest =
 
 export type LeadStatus = "nuevo" | "contactado" | "convertido" | "descartado";
 
+export type LeadActivityType = "note" | "contact";
+
+export type ContactChannel = "whatsapp" | "llamada" | "email" | "otro";
+
 export type LeadRow = {
   id: string;
   created_at: string;
@@ -43,6 +47,26 @@ export type LeadUpdate = {
   consent_contact?: boolean;
 };
 
+export type LeadActivityRow = {
+  id: string;
+  created_at: string;
+  lead_id: string;
+  created_by: string | null;
+  type: LeadActivityType;
+  channel: ContactChannel | null;
+  content: string;
+};
+
+export type LeadActivityInsert = {
+  id?: string;
+  created_at?: string;
+  lead_id: string;
+  created_by?: string | null;
+  type: LeadActivityType;
+  channel?: ContactChannel | null;
+  content: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -50,6 +74,12 @@ export type Database = {
         Row: LeadRow;
         Insert: LeadInsert;
         Update: LeadUpdate;
+        Relationships: [];
+      };
+      lead_activities: {
+        Row: LeadActivityRow;
+        Insert: LeadActivityInsert;
+        Update: Partial<LeadActivityInsert>;
         Relationships: [];
       };
     };

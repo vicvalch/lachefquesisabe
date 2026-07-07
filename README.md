@@ -6,10 +6,14 @@ Thermomix.
 
 > Cocina rico, fácil y sin complicarte.
 
-Este repositorio contiene el **PR 1**: la base técnica y funcional mínima del
-proyecto (landing, captura de leads, Supabase, admin con login y un
-dashboard inicial). No incluye automatizaciones, WhatsApp API, pagos online
-ni integraciones de CRM avanzadas — eso queda para PRs posteriores.
+Este repositorio contiene el **PR 1** (landing, captura de leads, Supabase,
+admin con login y un dashboard inicial) y el **PR 2**: detalle de lead,
+cambio de estado comercial, notas de seguimiento, registro de contactos y
+plantillas de WhatsApp personalizadas, para que el seguimiento manual por
+WhatsApp se pueda hacer desde el admin sin perder oportunidades. No incluye
+automatizaciones, WhatsApp API, email automation, HubSpot, pagos online,
+campañas avanzadas, recetas en CMS ni agenda de demos — eso queda para PRs
+posteriores.
 
 ## Stack
 
@@ -29,19 +33,25 @@ src/
     api/leads/route.ts        # Endpoint de captura de leads
     admin/
       (auth)/login/           # Login (fuera del layout protegido)
-      (protected)/            # Dashboard y leads (requieren sesión)
+      (protected)/            # Dashboard, listado y detalle de leads (requieren sesión)
+        leads/[id]/            # Detalle de un lead: estado, notas, WhatsApp
   components/
     landing/                  # Header, Hero, Features, LeadForm, Footer...
-    admin/                    # Sidebar, StatCard, LeadsTable, LoginForm...
-    ui/                       # Button, Input, Field, Select, Card, Badge
+    admin/                    # Sidebar, StatCard, LeadsTable, LeadInfoCard,
+                               # StatusSelect, ActivityForm/Timeline,
+                               # WhatsAppTemplates, LoginForm...
+    ui/                       # Button, Input, Field, Select, Textarea, Card, Badge
   lib/
     supabase/                 # Clientes de Supabase (server + proxy/sesión)
     validations/               # Schemas Zod compartidos
     leads/                     # Capa de acceso a datos de leads (testeable)
-    actions/                   # Server actions (auth)
+    whatsapp/                  # Plantillas de WhatsApp personalizadas
+    actions/                   # Server actions (auth, estado y notas de leads)
   proxy.ts                     # Protege /admin (antes "middleware.ts")
 supabase/
-  migrations/0001_init.sql     # Tabla leads, enums y políticas RLS
+  migrations/
+    0001_init.sql              # Tabla leads, enums y políticas RLS
+    0002_lead_activities.sql   # Notas de seguimiento y registro de contactos
 ```
 
 ## Configuración
@@ -82,6 +92,12 @@ Esto crea la tabla `leads` (con enums `lead_interest` / `lead_status`),
 - Solo usuarios **autenticados** (el equipo admin) pueden leer/actualizar/
   borrar leads.
 
+Aplica también `supabase/migrations/0002_lead_activities.sql`, que agrega la
+tabla `lead_activities` (notas de seguimiento y contactos registrados desde
+el detalle de cada lead). Esta tabla es de uso exclusivo del equipo admin:
+solo usuarios **autenticados** pueden leer/insertar/borrar, el formulario
+público no la toca.
+
 ### 3. Crear el usuario admin
 
 Por ahora no hay registro público de administradores. Crea el primer
@@ -110,6 +126,22 @@ npm run lint       # ESLint
 npm run test       # Tests (Vitest)
 npm run test:watch # Tests en modo watch
 ```
+
+## Detalle de lead (PR 2)
+
+Desde `/admin/leads` cada fila enlaza al detalle del lead
+(`/admin/leads/[id]`), pensado para el seguimiento manual día a día:
+
+- **Datos completos** del lead (contacto, interés, mensaje y estado actual).
+- **Cambio de estado comercial** (`nuevo` → `contactado` → `convertido` /
+  `descartado`) con un selector que guarda al instante.
+- **Notas y contactos registrados**: una bitácora cronológica por lead para
+  anotar seguimientos o dejar constancia de cada contacto (llamada,
+  WhatsApp, email, otro).
+- **Plantillas de WhatsApp** personalizadas con el nombre del lead, listas
+  para copiar o abrir directo en WhatsApp (`wa.me`) si el lead tiene
+  teléfono. No hay integración con la API de WhatsApp: el envío sigue
+  siendo manual.
 
 ## Notas de seguridad
 
