@@ -4,12 +4,25 @@ import { useMemo, useState } from "react";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { WHATSAPP_TEMPLATES, buildWhatsAppUrl } from "@/lib/whatsapp/templates";
+import {
+  WHATSAPP_TEMPLATES,
+  buildWhatsAppUrl,
+  type WhatsAppTemplateId,
+} from "@/lib/whatsapp/templates";
 import type { LeadRow } from "@/types/database";
 
-export function WhatsAppTemplates({ lead }: { lead: LeadRow }) {
-  const [templateId, setTemplateId] = useState(WHATSAPP_TEMPLATES[0].id);
-  const [message, setMessage] = useState(() => WHATSAPP_TEMPLATES[0].build(lead));
+export function WhatsAppTemplates({
+  lead,
+  defaultTemplateId,
+}: {
+  lead: LeadRow;
+  defaultTemplateId?: WhatsAppTemplateId;
+}) {
+  const initialTemplate =
+    WHATSAPP_TEMPLATES.find((template) => template.id === defaultTemplateId) ??
+    WHATSAPP_TEMPLATES[0];
+  const [templateId, setTemplateId] = useState(initialTemplate.id);
+  const [message, setMessage] = useState(() => initialTemplate.build(lead));
   const [copied, setCopied] = useState(false);
 
   const whatsappLink = useMemo(
@@ -17,7 +30,7 @@ export function WhatsAppTemplates({ lead }: { lead: LeadRow }) {
     [lead.phone, message],
   );
 
-  function selectTemplate(id: string) {
+  function selectTemplate(id: WhatsAppTemplateId) {
     const template = WHATSAPP_TEMPLATES.find((t) => t.id === id);
     if (!template) return;
     setTemplateId(id);

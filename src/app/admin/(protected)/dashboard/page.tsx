@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getLeadStats, listUpcomingFollowUps } from "@/lib/leads/queries";
 import {
@@ -60,9 +61,17 @@ export default async function DashboardPage() {
       </div>
 
       <div>
-        <h2 className="font-display text-lg font-semibold text-ink">
-          Seguimientos pendientes
-        </h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="font-display text-lg font-semibold text-ink">
+            Seguimientos pendientes
+          </h2>
+          <Link
+            href="/admin/seguimientos"
+            className="text-sm font-semibold text-brand-700 hover:underline"
+          >
+            Ver el centro de seguimientos →
+          </Link>
+        </div>
         <p className="mt-1 text-sm text-ink-soft">
           Leads con un próximo seguimiento vencido o para hoy.
         </p>
