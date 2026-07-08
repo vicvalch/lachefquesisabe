@@ -90,3 +90,7 @@ export const CheckCircleIcon = createIcon(
     <path d="M8.5 12.5l2.3 2.3L16 10" />
   </>,
 );
+
+export const ChevronLeftIcon = createIcon(<path d="M15 5l-7 7 7 7" />);
+
+export const ChevronRightIcon = createIcon(<path d="M9 5l7 7-7 7" />);
