@@ -29,11 +29,19 @@ const PRIMARY_INTERESTS: PrimaryInterest[] = [
   "more_info",
 ];
 
+const DEMO_INTERESTS: PrimaryInterest[] = [
+  "in_person_demo",
+  "virtual_demo",
+  "buy_thermomix",
+];
+
 export interface LeadStats {
   total: number;
   last7Days: number;
   byStatus: Record<LeadStatus, number>;
   byInterest: Record<PrimaryInterest, number>;
+  newsletterSubscribers: number;
+  demoInterested: number;
 }
 
 function emptyStats(): LeadStats {
@@ -47,6 +55,8 @@ function emptyStats(): LeadStats {
     byInterest: Object.fromEntries(
       PRIMARY_INTERESTS.map((i) => [i, 0]),
     ) as Record<PrimaryInterest, number>,
+    newsletterSubscribers: 0,
+    demoInterested: 0,
   };
 }
 
@@ -55,7 +65,7 @@ export async function getLeadStats(
 ): Promise<LeadStats> {
   const { data, error } = await supabase
     .from("leads")
-    .select("status, primary_interest, created_at");
+    .select("status, primary_interest, created_at, tags");
 
   if (error || !data) {
     return emptyStats();
@@ -68,6 +78,12 @@ export async function getLeadStats(
     stats.total += 1;
     stats.byStatus[row.status] += 1;
     stats.byInterest[row.primary_interest] += 1;
+    if (DEMO_INTERESTS.includes(row.primary_interest)) {
+      stats.demoInterested += 1;
+    }
+    if (row.tags?.includes("newsletter")) {
+      stats.newsletterSubscribers += 1;
+    }
     if (new Date(row.created_at).getTime() >= sevenDaysAgo) {
       stats.last7Days += 1;
     }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { listLeads } from "@/lib/leads/queries";
+import { getLeadStats, listLeads } from "@/lib/leads/queries";
 import { listDueFollowUpTasks } from "@/lib/leads/follow-up-tasks-queries";
 import { groupFollowUpTasks } from "@/lib/leads/follow-up-tasks";
 import {
@@ -22,12 +22,13 @@ const ACTIVE_CAMPAIGN_STATUSES = new Set(["draft", "ready", "tasks_created"]);
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const [dueFollowUpTasks, newLeads, upcomingDemos, recentCampaigns] =
+  const [dueFollowUpTasks, newLeads, upcomingDemos, recentCampaigns, leadStats] =
     await Promise.all([
       listDueFollowUpTasks(supabase, 8),
       listLeads(supabase, { status: "new", limit: 5 }),
       listUpcomingDemoEvents(supabase, 5),
       listRecentOutreachCampaigns(supabase, 5),
+      getLeadStats(supabase),
     ]);
   const demoCounts = await getRegistrationCountsByDemoIds(
     supabase,
@@ -51,10 +52,19 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard label="Leads totales" value={leadStats.total} />
+        <StatCard label="Leads nuevos" value={leadStats.byStatus.new} />
+        <StatCard
+          label="Suscriptores newsletter"
+          value={leadStats.newsletterSubscribers}
+        />
+        <StatCard label="Interesados en demo" value={leadStats.demoInterested} />
         <StatCard label="Seguimientos vencidos" value={overdue.length} />
         <StatCard label="Seguimientos para hoy" value={today.length} />
-        <StatCard label="Leads nuevos" value={newLeads.length} />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
         <StatCard label="Campañas activas" value={activeCampaignsCount} />
       </div>
 

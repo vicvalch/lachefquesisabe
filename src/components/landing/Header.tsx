@@ -7,6 +7,7 @@ import { buttonClasses } from "@/components/ui/Button";
 
 const NAV_LINKS = [
   { href: "/recetas", label: "Recetas" },
+  { href: "#videos", label: "Videos" },
   { href: "#thermomix", label: "Thermomix" },
   { href: "/demos", label: "Demos" },
   { href: "#contacto", label: "Contacto" },
@@ -38,7 +39,7 @@ export function Header() {
         </nav>
         <div className="flex items-center gap-2">
           <a
-            href="#contacto"
+            href="#recetas-newsletter"
             className={buttonClasses("primary", "hidden px-5 py-2.5 text-sm sm:inline-flex")}
           >
             Quiero mis recetas
@@ -81,7 +82,7 @@ export function Header() {
             </Link>
           ))}
           <a
-            href="#contacto"
+            href="#recetas-newsletter"
             onClick={() => setOpen(false)}
             className={buttonClasses("primary", "mt-2 justify-center px-5 py-2.5 text-sm sm:hidden")}
           >

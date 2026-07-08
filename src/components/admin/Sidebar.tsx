@@ -12,10 +12,12 @@ const NAV_LINKS = [
   { href: "/admin/leads", label: "Leads" },
   { href: "/admin/demos", label: "Demos" },
   { href: "/admin/content", label: "Contenido" },
+  { href: "/admin/videos", label: "Videos" },
   { href: "/admin/seguimientos", label: "Seguimientos" },
   { href: "/admin/plantillas", label: "Plantillas" },
   { href: "/admin/segmentos", label: "Segmentos" },
   { href: "/admin/campanas", label: "Campañas" },
+  { href: "/admin/settings", label: "Configuración" },
 ];
 
 function isActiveLink(pathname: string, href: string) {

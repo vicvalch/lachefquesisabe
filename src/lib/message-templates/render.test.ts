@@ -16,6 +16,7 @@ const baseLead: LeadRow = {
   notes: null,
   next_follow_up_at: null,
   last_contacted_at: null,
+  tags: [],
 };
 
 const baseDemo: DemoEventRow = {
