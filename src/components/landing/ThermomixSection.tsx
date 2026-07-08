@@ -41,12 +41,15 @@ const BENEFITS = [
   },
 ];
 
+const DEFAULT_THERMOMIX_IMAGE = "/assets/thermomix.jpeg";
+
 export function ThermomixSection() {
   const whatsappUrl = buildWhatsAppUrl(WHATSAPP_NUMBER, WHATSAPP_THERMOMIX_MESSAGE);
   const whatsappHref = whatsappUrl ?? "#contacto";
   const thermomixVideoId = THERMOMIX_VIDEO_URL
     ? extractYoutubeVideoId(THERMOMIX_VIDEO_URL)
     : null;
+  const thermomixImageSrc = THERMOMIX_IMAGE_URL || DEFAULT_THERMOMIX_IMAGE;
 
   return (
     <section id="thermomix" className="px-6 py-20">
@@ -100,20 +103,14 @@ export function ThermomixSection() {
                   title="Video Thermomix"
                   thumbnailUrl={null}
                 />
-              ) : THERMOMIX_IMAGE_URL ? (
+              ) : (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={THERMOMIX_IMAGE_URL}
-                  alt="Thermomix"
+                  src={thermomixImageSrc}
+                  alt="Thermomix, la máquina de cocina inteligente"
                   className="aspect-video w-full object-cover"
+                  loading="lazy"
                 />
-              ) : (
-                <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 bg-white/10 text-center text-white/70">
-                  <ChefHatIcon className="h-10 w-10" />
-                  <p className="px-6 text-sm">
-                    Imagen o video de la Thermomix próximamente
-                  </p>
-                </div>
               )}
             </div>
           </div>
