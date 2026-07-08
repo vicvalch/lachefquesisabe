@@ -42,6 +42,7 @@ function buildLead(overrides: Partial<LeadRow> = {}): LeadRow {
     notes: null,
     next_follow_up_at: null,
     last_contacted_at: null,
+    tags: [],
     ...overrides,
   };
 }

@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { buttonClasses } from "@/components/ui/Button";
-import { buildWhatsAppUrl } from "@/lib/whatsapp/templates";
-import { WHATSAPP_DEFAULT_MESSAGE, WHATSAPP_NUMBER } from "@/lib/config/site";
-import { ClockIcon, ChefHatIcon, LeafIcon, MessageCircleIcon } from "@/components/icons";
+import { ClockIcon, ChefHatIcon, LeafIcon, ScreenIcon } from "@/components/icons";
 
 const QUICK_HIGHLIGHTS = [
   { icon: ClockIcon, label: "Ahorra tiempo en la cocina" },
@@ -11,14 +9,11 @@ const QUICK_HIGHLIGHTS = [
 ];
 
 export function Hero() {
-  const whatsappUrl = buildWhatsAppUrl(WHATSAPP_NUMBER, WHATSAPP_DEFAULT_MESSAGE);
-  const whatsappHref = whatsappUrl ?? "#contacto";
-
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-emerald-900 to-emerald-700">
       <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-6 pb-28 pt-16 sm:pb-32 sm:pt-24">
         <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white/90">
-          Cocina natural · Thermomix · Costa Rica
+          María Checa Arias-Schreiber · Agente autorizada Thermomix · Costa Rica
         </span>
         <h1 className="font-display text-4xl font-semibold leading-tight text-white sm:text-5xl md:text-6xl">
           Cocina rico, fácil
@@ -26,25 +21,21 @@ export function Hero() {
           <em className="italic">sin complicarte</em>.
         </h1>
         <p className="max-w-xl text-lg text-cream/85">
-          Recetas, demos y acompañamiento personalizado para sacarle más
-          provecho a tu Thermomix.
+          Soy María, la chef que sí sabe. Suscríbete y recibe mis recetas,
+          mira mis videos de cocina y descubre cómo la Thermomix puede
+          transformar tu día a día.
         </p>
         <div className="flex flex-wrap gap-3 pt-2">
-          <Link href="/demos" className={buttonClasses("primary")}>
-            Agendar una demo
-          </Link>
-          <Link href="/recetas" className={buttonClasses("outline")}>
-            Ver recetas
-          </Link>
-          <a
-            href={whatsappHref}
-            target={whatsappUrl ? "_blank" : undefined}
-            rel={whatsappUrl ? "noopener noreferrer" : undefined}
-            className={buttonClasses("whatsapp", "gap-2")}
-          >
-            <MessageCircleIcon className="h-4 w-4" />
-            Escribirme por WhatsApp
+          <a href="#recetas-newsletter" className={buttonClasses("primary")}>
+            Quiero mis recetas
           </a>
+          <a href="#videos" className={buttonClasses("outline", "gap-2")}>
+            <ScreenIcon className="h-4 w-4" />
+            Ver recetas en video
+          </a>
+          <Link href="/demos" className={buttonClasses("outline")}>
+            Quiero una demo de Thermomix
+          </Link>
         </div>
       </div>
 

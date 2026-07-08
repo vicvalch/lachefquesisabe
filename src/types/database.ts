@@ -132,6 +132,7 @@ export type LeadRow = {
   notes: string | null;
   next_follow_up_at: string | null;
   last_contacted_at: string | null;
+  tags: string[];
 };
 
 export type LeadInsert = {
@@ -148,6 +149,7 @@ export type LeadInsert = {
   notes?: string | null;
   next_follow_up_at?: string | null;
   last_contacted_at?: string | null;
+  tags?: string[];
 };
 
 export type LeadUpdate = {
@@ -162,6 +164,7 @@ export type LeadUpdate = {
   notes?: string | null;
   next_follow_up_at?: string | null;
   last_contacted_at?: string | null;
+  tags?: string[];
 };
 
 export type ContactLogRow = {
@@ -366,6 +369,66 @@ export type ContentPostUpdate = {
   seo_title?: string | null;
   seo_description?: string | null;
   featured?: boolean;
+};
+
+export type RecipeVideoDifficulty = "facil" | "media" | "avanzada";
+
+export type RecipeVideoStatus = "draft" | "published" | "archived";
+
+export type RecipeVideoRow = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  youtube_url: string;
+  youtube_video_id: string | null;
+  thumbnail_url: string | null;
+  category: string;
+  difficulty: RecipeVideoDifficulty | null;
+  duration_minutes: number | null;
+  ingredients: string[] | null;
+  tags: string[];
+  status: RecipeVideoStatus;
+  published_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RecipeVideoInsert = {
+  id?: string;
+  title: string;
+  slug: string;
+  description?: string | null;
+  youtube_url: string;
+  youtube_video_id?: string | null;
+  thumbnail_url?: string | null;
+  category?: string;
+  difficulty?: RecipeVideoDifficulty | null;
+  duration_minutes?: number | null;
+  ingredients?: string[] | null;
+  tags?: string[];
+  status?: RecipeVideoStatus;
+  published_at?: string | null;
+  created_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type RecipeVideoUpdate = {
+  title?: string;
+  slug?: string;
+  description?: string | null;
+  youtube_url?: string;
+  youtube_video_id?: string | null;
+  thumbnail_url?: string | null;
+  category?: string;
+  difficulty?: RecipeVideoDifficulty | null;
+  duration_minutes?: number | null;
+  ingredients?: string[] | null;
+  tags?: string[];
+  status?: RecipeVideoStatus;
+  published_at?: string | null;
 };
 
 export type MessageTemplateRow = {
@@ -581,6 +644,12 @@ export type Database = {
         Row: ContentPostRow;
         Insert: ContentPostInsert;
         Update: ContentPostUpdate;
+        Relationships: [];
+      };
+      recipe_videos: {
+        Row: RecipeVideoRow;
+        Insert: RecipeVideoInsert;
+        Update: RecipeVideoUpdate;
         Relationships: [];
       };
       message_templates: {
