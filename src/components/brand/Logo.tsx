@@ -6,19 +6,29 @@ interface LogoProps {
 }
 
 export function Logo({ className, markOnly = false }: LogoProps) {
-  return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <span
-        aria-hidden
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-500 font-display text-base font-semibold text-white"
-      >
-        LC
-      </span>
-      {!markOnly && (
-        <span className="font-display text-lg font-semibold leading-tight text-ink">
-          La Chef que Sí Sabe
+  if (markOnly) {
+    return (
+      <span className={cn("inline-flex items-center", className)}>
+        <span
+          aria-hidden
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-500 font-display text-base font-semibold text-white"
+        >
+          LC
         </span>
-      )}
+      </span>
+    );
+  }
+
+  return (
+    <span className={cn("inline-flex items-center", className)}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/logo.png"
+        alt="La Chef que Sí Sabe"
+        loading="eager"
+        fetchPriority="high"
+        className="h-12 w-12 shrink-0 rounded-xl object-contain sm:h-14 sm:w-14"
+      />
     </span>
   );
 }
