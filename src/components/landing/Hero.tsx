@@ -1,17 +1,11 @@
 import Link from "next/link";
 import { buttonClasses } from "@/components/ui/Button";
-import { ClockIcon, ChefHatIcon, LeafIcon, ScreenIcon } from "@/components/icons";
-
-const QUICK_HIGHLIGHTS = [
-  { icon: ClockIcon, label: "Ahorra tiempo en la cocina" },
-  { icon: ChefHatIcon, label: "Demos guiadas paso a paso" },
-  { icon: LeafIcon, label: "Recetas naturales y simples" },
-];
+import { ScreenIcon } from "@/components/icons";
 
 export function Hero() {
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-emerald-900 to-emerald-700">
-      <div className="mx-auto grid max-w-6xl gap-10 px-6 pb-28 pt-16 sm:pb-32 sm:pt-24 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-12">
+      <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:py-24 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-12">
         <div className="flex flex-col items-start gap-6">
           <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white/90">
             María Checa Arias-Schreiber · Agente autorizada Thermomix · Costa Rica
@@ -56,22 +50,6 @@ export function Hero() {
               </span>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="relative mx-auto -mt-16 max-w-6xl px-6 sm:-mt-20">
-        <div className="grid gap-4 sm:grid-cols-3">
-          {QUICK_HIGHLIGHTS.map(({ icon: Icon, label }) => (
-            <div
-              key={label}
-              className="flex items-center gap-3 rounded-2xl border border-border-soft bg-white-soft p-5 shadow-md"
-            >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
-                <Icon className="h-5 w-5" />
-              </span>
-              <p className="text-sm font-semibold text-ink">{label}</p>
-            </div>
-          ))}
         </div>
       </div>
     </section>
