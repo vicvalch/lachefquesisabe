@@ -42,9 +42,6 @@ export function HeroMariaSlide() {
           <a href="#recetas-newsletter" className={buttonClasses("primary")}>
             Quiero mis recetas
           </a>
-          <a href="#sobre-mi" className={buttonClasses("outline")}>
-            Conocer a María
-          </a>
           <Link href="/demos" className={buttonClasses("outline")}>
             Quiero una demo de Thermomix
           </Link>
