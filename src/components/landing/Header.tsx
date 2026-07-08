@@ -6,6 +6,7 @@ import { Logo } from "@/components/brand/Logo";
 import { buttonClasses } from "@/components/ui/Button";
 
 const NAV_LINKS = [
+  { href: "/historia", label: "Historia" },
   { href: "/recetas", label: "Recetas" },
   { href: "#videos", label: "Videos" },
   { href: "#thermomix", label: "Thermomix" },

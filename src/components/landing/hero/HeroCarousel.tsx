@@ -99,7 +99,7 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
           return (
             <div
               key={slide.id}
-              className={`col-start-1 row-start-1 transition-opacity duration-700 ease-out ${
+              className={`col-start-1 row-start-1 flex w-full items-center transition-opacity duration-700 ease-out ${
                 isActive ? "opacity-100" : "opacity-0"
               }`}
               aria-roledescription="slide"
