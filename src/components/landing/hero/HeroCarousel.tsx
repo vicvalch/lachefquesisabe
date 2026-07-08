@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode, TouchEvent } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 
-const AUTOPLAY_INTERVAL_MS = 7000;
+const AUTOPLAY_INTERVAL_MS = 6000;
 const SWIPE_THRESHOLD_PX = 50;
 
 export interface HeroSlideDefinition {

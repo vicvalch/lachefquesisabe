@@ -3,7 +3,6 @@ import { Hero } from "@/components/landing/Hero";
 import { NewsletterSection } from "@/components/landing/NewsletterSection";
 import { RecipeVideosSection } from "@/components/landing/RecipeVideosSection";
 import { Features } from "@/components/landing/Features";
-import { About } from "@/components/landing/About";
 import { ThermomixSection } from "@/components/landing/ThermomixSection";
 import { WhatsAppCtaSection } from "@/components/landing/WhatsAppCtaSection";
 import { LeadFormSection } from "@/components/landing/LeadFormSection";
@@ -18,7 +17,6 @@ export default function Home() {
         <NewsletterSection />
         <RecipeVideosSection />
         <Features />
-        <About />
         <ThermomixSection />
         <WhatsAppCtaSection />
         <LeadFormSection />
